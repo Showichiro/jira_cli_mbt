@@ -1,4 +1,8 @@
 ///|
+extern "js" fn ffi_btoa(input : String) -> String =
+  #| (s) => btoa(unescape(encodeURIComponent(s)))
+
+///|
 fn base64_encode(input : String) -> String {
-  @buffer.Buffer::from_string(input).toString(encoding="base64")
+  ffi_btoa(input)
 }

@@ -1,7 +1,6 @@
 import {
   "Showichiro/jira_cli_mbt/types",
   "mizchi/js/core",
-  "mizchi/js/node/buffer",
   "mizchi/js/web/http",
 }
 

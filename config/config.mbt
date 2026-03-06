@@ -1,6 +1,6 @@
 ///|
 fn config_dir() -> String {
-  @path.join([@os.homedir(), ".config", "jira_cli_mbt"])
+  @path.join2(@path.join2(@os.homedir(), ".config"), "jira_cli_mbt")
 }
 
 ///|
@@ -10,14 +10,14 @@ fn config_path() -> String {
 
 ///|
 pub async fn load_config() -> @types.JiraConfig {
-  let content = @fs_promises.readFile(config_path())
+  let content = read_file(config_path())
   let json : Json = @json.parse(content)
   @json.from_json(json)
 }
 
 ///|
 pub async fn save_config(config : @types.JiraConfig) -> Unit {
-  @fs_promises.mkdir(config_dir(), recursive=true)
+  mkdir_recursive(config_dir())
   let json = config.to_json().stringify()
-  @fs_promises.writeFile(config_path(), json)
+  write_file(config_path(), json)
 }
