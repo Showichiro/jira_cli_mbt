@@ -1,11 +1,11 @@
 ///|
-fn auth_header(config : JiraConfig) -> String {
+fn auth_header(config : @types.JiraConfig) -> String {
   let credentials = base64_encode(config.email + ":" + config.api_token)
   "Basic " + credentials
 }
 
 ///|
-async fn api_get(config : JiraConfig, path : String) -> @core.Any {
+async fn api_get(config : @types.JiraConfig, path : String) -> @core.Any {
   let url = config.base_url + path
   let headers : Map[String, String] = {
     "Authorization": auth_header(config),
@@ -22,7 +22,7 @@ async fn api_get(config : JiraConfig, path : String) -> @core.Any {
 
 ///|
 async fn api_post(
-  config : JiraConfig,
+  config : @types.JiraConfig,
   path : String,
   body : @core.Any,
 ) -> @core.Any {
@@ -43,7 +43,7 @@ async fn api_post(
 
 ///|
 async fn api_put(
-  config : JiraConfig,
+  config : @types.JiraConfig,
   path : String,
   body : @core.Any,
 ) -> @core.Any {
@@ -73,7 +73,7 @@ fn get_string(obj : @core.Any, key : String) -> String {
 }
 
 ///|
-fn parse_issue(data : @core.Any) -> JiraIssue {
+fn parse_issue(data : @core.Any) -> @types.JiraIssue {
   let fields = data._get("fields")
   let status = fields._get("status")._get("name")
   let assignee = fields._get("assignee")
@@ -113,13 +113,13 @@ fn parse_issue(data : @core.Any) -> JiraIssue {
 }
 
 ///|
-fn parse_issues(data : @core.Any) -> Array[JiraIssue] {
+fn parse_issues(data : @core.Any) -> Array[@types.JiraIssue] {
   let issues_arr = @core.array_from(data._get("issues"))
   issues_arr.map(parse_issue)
 }
 
 ///|
-fn parse_project(data : @core.Any) -> JiraProject {
+fn parse_project(data : @core.Any) -> @types.JiraProject {
   {
     key: get_string(data, "key"),
     name: get_string(data, "name"),
@@ -128,7 +128,10 @@ fn parse_project(data : @core.Any) -> JiraProject {
 }
 
 ///|
-pub async fn list_issues(config : JiraConfig, jql : String) -> Array[JiraIssue] {
+pub async fn list_issues(
+  config : @types.JiraConfig,
+  jql : String,
+) -> Array[@types.JiraIssue] {
   let encoded_jql = encode_uri_component(jql)
   let data = api_get(
     config,
@@ -138,14 +141,17 @@ pub async fn list_issues(config : JiraConfig, jql : String) -> Array[JiraIssue] 
 }
 
 ///|
-pub async fn get_issue(config : JiraConfig, key : String) -> JiraIssue {
+pub async fn get_issue(
+  config : @types.JiraConfig,
+  key : String,
+) -> @types.JiraIssue {
   let data = api_get(config, "/rest/api/3/issue/\{key}")
   parse_issue(data)
 }
 
 ///|
 pub async fn create_issue(
-  config : JiraConfig,
+  config : @types.JiraConfig,
   project : String,
   summary : String,
   issue_type : String,
@@ -177,13 +183,13 @@ pub async fn create_issue(
 }
 
 ///|
-async fn get_transitions(config : JiraConfig, key : String) -> @core.Any {
+async fn get_transitions(config : @types.JiraConfig, key : String) -> @core.Any {
   api_get(config, "/rest/api/3/issue/\{key}/transitions")
 }
 
 ///|
 async fn do_transition(
-  config : JiraConfig,
+  config : @types.JiraConfig,
   key : String,
   transition_id : String,
 ) -> Unit {
@@ -199,7 +205,7 @@ async fn do_transition(
 
 ///|
 pub async fn transition_issue(
-  config : JiraConfig,
+  config : @types.JiraConfig,
   key : String,
   status_name : String,
 ) -> Unit {
@@ -217,7 +223,7 @@ pub async fn transition_issue(
 
 ///|
 pub async fn add_comment(
-  config : JiraConfig,
+  config : @types.JiraConfig,
   key : String,
   text : String,
 ) -> Unit {
@@ -230,14 +236,14 @@ pub async fn add_comment(
 }
 
 ///|
-async fn search_users(config : JiraConfig, email : String) -> @core.Any {
+async fn search_users(config : @types.JiraConfig, email : String) -> @core.Any {
   let encoded = encode_uri_component(email)
   api_get(config, "/rest/api/3/user/search?query=\{encoded}")
 }
 
 ///|
 pub async fn assign_issue(
-  config : JiraConfig,
+  config : @types.JiraConfig,
   key : String,
   email : String,
 ) -> Unit {
@@ -255,7 +261,9 @@ pub async fn assign_issue(
 }
 
 ///|
-pub async fn list_projects(config : JiraConfig) -> Array[JiraProject] {
+pub async fn list_projects(
+  config : @types.JiraConfig,
+) -> Array[@types.JiraProject] {
   let data = api_get(config, "/rest/api/3/project")
   let projects = @core.array_from(data)
   projects.map(parse_project)

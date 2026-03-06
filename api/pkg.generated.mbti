@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Showichiro/jira_cli_mbt/api"
+
+import {
+  "Showichiro/jira_cli_mbt/types",
+}
+
+// Values
+pub async fn add_comment(@types.JiraConfig, String, String) -> Unit
+
+pub async fn assign_issue(@types.JiraConfig, String, String) -> Unit
+
+pub async fn create_issue(@types.JiraConfig, String, String, String, String) -> String
+
+pub async fn get_issue(@types.JiraConfig, String) -> @types.JiraIssue
+
+pub async fn list_issues(@types.JiraConfig, String) -> Array[@types.JiraIssue]
+
+pub async fn list_projects(@types.JiraConfig) -> Array[@types.JiraProject]
+
+pub async fn transition_issue(@types.JiraConfig, String, String) -> Unit
+
+// Errors
+pub suberror JiraApiError {
+  JiraApiError(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

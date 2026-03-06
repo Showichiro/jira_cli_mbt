@@ -1,0 +1,11 @@
+import {
+  "Showichiro/jira_cli_mbt/types",
+  "mizchi/js/node/fs_promises",
+  "mizchi/js/node/os",
+  "mizchi/js/node/path",
+  "moonbitlang/core/json",
+}
+
+options(
+  "supported-targets": [ "js" ],
+)

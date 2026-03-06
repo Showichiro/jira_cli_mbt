@@ -1,0 +1,7 @@
+import {
+  "Showichiro/jira_cli_mbt/types",
+}
+
+options(
+  "supported-targets": [ "js" ],
+)

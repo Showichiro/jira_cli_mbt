@@ -38,7 +38,7 @@ fn format_table(
 }
 
 ///|
-pub fn format_issue_list(issues : Array[JiraIssue]) -> String {
+pub fn format_issue_list(issues : Array[@types.JiraIssue]) -> String {
   if issues.is_empty() {
     return "No issues found."
   }
@@ -57,7 +57,7 @@ pub fn format_issue_list(issues : Array[JiraIssue]) -> String {
 }
 
 ///|
-pub fn format_issue_detail(issue : JiraIssue) -> String {
+pub fn format_issue_detail(issue : @types.JiraIssue) -> String {
   [
     "Key:         \{issue.key}",
     "Type:        \{issue.issue_type}",
@@ -74,7 +74,7 @@ pub fn format_issue_detail(issue : JiraIssue) -> String {
 }
 
 ///|
-pub fn format_projects(projects : Array[JiraProject]) -> String {
+pub fn format_projects(projects : Array[@types.JiraProject]) -> String {
   if projects.is_empty() {
     return "No projects found."
   }

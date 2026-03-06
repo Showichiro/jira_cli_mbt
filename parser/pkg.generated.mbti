@@ -1,13 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "Showichiro/jira_cli_mbt"
+package "Showichiro/jira_cli_mbt/parser"
 
 import {
   "Showichiro/jira_cli_mbt/types",
 }
 
 // Values
-pub async fn execute(Result[@types.Command, String]) -> String
-
 pub fn parse_args(ArrayView[String]) -> Result[@types.Command, String]
 
 // Errors

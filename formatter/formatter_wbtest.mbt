@@ -29,52 +29,13 @@ test "truncate: longer than max" {
 }
 
 ///|
-test "build_adf_text" {
-  let adf = build_adf_text("hello")
-  let json_str = @core.json_stringify_pretty(adf, 2)
-  inspect(
-    json_str,
-    content=(
-      #|{
-      #|  "type": "doc",
-      #|  "version": 1,
-      #|  "content": [
-      #|    {
-      #|      "type": "paragraph",
-      #|      "content": [
-      #|        {
-      #|          "type": "text",
-      #|          "text": "hello"
-      #|        }
-      #|      ]
-      #|    }
-      #|  ]
-      #|}
-    ),
-  )
-}
-
-///|
-test "parse_flags: basic" {
-  let flags = parse_flags(["--key", "PROJ-1", "--status", "Done"][:], {})
-  inspect(flags.get("key"), content="Some(\"PROJ-1\")")
-  inspect(flags.get("status"), content="Some(\"Done\")")
-}
-
-///|
-test "parse_flags: empty" {
-  let flags = parse_flags([][:], {})
-  inspect(flags.length(), content="0")
-}
-
-///|
 test "format_issue_list: empty" {
   inspect(format_issue_list([]), content="No issues found.")
 }
 
 ///|
 test "format_issue_list: single issue" {
-  let issues : Array[JiraIssue] = [
+  let issues : Array[@types.JiraIssue] = [
     {
       key: "PROJ-1",
       summary: "Fix bug",
@@ -97,7 +58,7 @@ test "format_issue_list: single issue" {
 
 ///|
 test "format_issue_detail" {
-  let issue : JiraIssue = {
+  let issue : @types.JiraIssue = {
     key: "PROJ-1",
     summary: "Fix bug",
     status: "Open",
@@ -127,7 +88,7 @@ test "format_projects: empty" {
 
 ///|
 test "format_projects: single project" {
-  let projects : Array[JiraProject] = [
+  let projects : Array[@types.JiraProject] = [
     { key: "PROJ", name: "My Project", project_type: "software" },
   ]
   inspect(

@@ -9,14 +9,14 @@ fn config_path() -> String {
 }
 
 ///|
-pub async fn load_config() -> JiraConfig {
+pub async fn load_config() -> @types.JiraConfig {
   let content = @fs_promises.readFile(config_path())
   let json : Json = @json.parse(content)
   @json.from_json(json)
 }
 
 ///|
-pub async fn save_config(config : JiraConfig) -> Unit {
+pub async fn save_config(config : @types.JiraConfig) -> Unit {
   @fs_promises.mkdir(config_dir(), recursive=true)
   let json = config.to_json().stringify()
   @fs_promises.writeFile(config_path(), json)

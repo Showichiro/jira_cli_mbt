@@ -1,12 +1,12 @@
 ///|
-pub struct JiraConfig {
+pub(all) struct JiraConfig {
   base_url : String
   email : String
   api_token : String
 } derive(Show, ToJson, FromJson)
 
 ///|
-pub struct JiraIssue {
+pub(all) struct JiraIssue {
   key : String
   summary : String
   status : String
@@ -17,14 +17,14 @@ pub struct JiraIssue {
 } derive(Show)
 
 ///|
-pub struct JiraProject {
+pub(all) struct JiraProject {
   key : String
   name : String
   project_type : String
 } derive(Show)
 
 ///|
-pub enum Command {
+pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String)
   ListIssues(jql~ : String)
   GetIssue(key~ : String)

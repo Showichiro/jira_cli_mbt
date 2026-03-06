@@ -1,11 +1,9 @@
 import {
-  "mizchi/js/core",
-  "mizchi/js/node/fs_promises",
-  "mizchi/js/node/os",
-  "mizchi/js/node/path",
-  "mizchi/js/node/buffer",
-  "mizchi/js/web/http",
-  "moonbitlang/core/json",
+  "Showichiro/jira_cli_mbt/types",
+  "Showichiro/jira_cli_mbt/config",
+  "Showichiro/jira_cli_mbt/formatter",
+  "Showichiro/jira_cli_mbt/parser",
+  "Showichiro/jira_cli_mbt/api",
 }
 
 options(
