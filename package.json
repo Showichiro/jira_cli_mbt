@@ -1,0 +1,28 @@
+{
+  "name": "@showichiro/jira-cli",
+  "version": "0.1.0",
+  "description": "Jira CLI built with MoonBit",
+  "type": "module",
+  "bin": {
+    "jira-cli": "./dist/cli.mjs",
+    "jira-cli-mbt": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "moon build --target js && node scripts/bundle.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Showichiro/jira_cli_mbt.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
