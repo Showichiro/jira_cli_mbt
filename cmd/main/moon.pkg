@@ -1,0 +1,7 @@
+// import {
+//   "username/jira_cli_mbt" @lib,
+// }
+
+options(
+  "is-main": true,
+)
