@@ -1,6 +1,6 @@
 {
   "name": "@showichiro/jira-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Jira CLI built with MoonBit",
   "type": "module",
   "bin": {
