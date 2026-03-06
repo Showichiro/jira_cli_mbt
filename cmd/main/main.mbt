@@ -10,6 +10,10 @@ fn main {
         println("Error: \{msg}")
         @process.exit(1)
       }
+      @config.ConfigError(msg) => {
+        println("Error: \{msg}")
+        @process.exit(1)
+      }
       e => {
         println("Error: \{e}")
         @process.exit(1)

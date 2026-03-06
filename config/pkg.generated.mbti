@@ -11,6 +11,9 @@ pub async fn load_config() -> @types.JiraConfig
 pub async fn save_config(@types.JiraConfig) -> Unit
 
 // Errors
+pub suberror ConfigError {
+  ConfigError(String)
+}
 
 // Types and methods
 

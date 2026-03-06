@@ -10,7 +10,12 @@ fn config_path() -> String {
 
 ///|
 pub async fn load_config() -> @types.JiraConfig {
-  let content = read_file(config_path())
+  let content = read_file(config_path()) catch {
+    _ =>
+      raise ConfigError(
+        "Config not found. Run: jira config --base-url <url> --email <email> --api-token <token>",
+      )
+  }
   let json : Json = @json.parse(content)
   @json.from_json(json)
 }

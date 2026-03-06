@@ -5,34 +5,31 @@ fn auth_header(config : @types.JiraConfig) -> String {
 }
 
 ///|
-async fn api_get(config : @types.JiraConfig, path : String) -> @core.Any {
-  let url = config.base_url + path
-  let headers : Map[String, String] = {
-    "Authorization": auth_header(config),
-    "Accept": "application/json",
-  }
-  let response = @http.fetch(url, method_="GET", headers~)
-  guard response.ok else {
-    raise JiraApiError(
-      "API request failed: \{response.status} \{response.statusText}",
-    )
-  }
-  response.json()
-}
-
-///|
-async fn api_post(
+async fn api_request(
   config : @types.JiraConfig,
+  http_method : String,
   path : String,
-  body : @core.Any,
+  body? : @core.Any = @core.any(""),
 ) -> @core.Any {
   let url = config.base_url + path
   let headers : Map[String, String] = {
     "Authorization": auth_header(config),
     "Accept": "application/json",
-    "Content-Type": "application/json",
   }
-  let response = @http.fetch(url, method_="POST", headers~, body~)
+  if http_method != "GET" {
+    headers["Content-Type"] = "application/json"
+  }
+  let actual_body = if http_method != "GET" {
+    @core.any(@core.json_stringify(body))
+  } else {
+    body
+  }
+  let response = @http.fetch(
+    url,
+    method_=http_method,
+    headers~,
+    body=actual_body,
+  )
   guard response.ok else {
     raise JiraApiError(
       "API request failed: \{response.status} \{response.statusText}",
@@ -42,31 +39,13 @@ async fn api_post(
 }
 
 ///|
-async fn api_put(
-  config : @types.JiraConfig,
-  path : String,
-  body : @core.Any,
-) -> @core.Any {
-  let url = config.base_url + path
-  let headers : Map[String, String] = {
-    "Authorization": auth_header(config),
-    "Accept": "application/json",
-    "Content-Type": "application/json",
+fn get_string(obj : @core.Any, key : String, default? : String = "") -> String {
+  if @core.is_nullish(obj) {
+    return default
   }
-  let response = @http.fetch(url, method_="PUT", headers~, body~)
-  guard response.ok else {
-    raise JiraApiError(
-      "API request failed: \{response.status} \{response.statusText}",
-    )
-  }
-  response.json()
-}
-
-///|
-fn get_string(obj : @core.Any, key : String) -> String {
   let value = obj._get(key)
   if @core.is_nullish(value) {
-    ""
+    default
   } else {
     value.to_string()
   }
@@ -75,10 +54,6 @@ fn get_string(obj : @core.Any, key : String) -> String {
 ///|
 fn parse_issue(data : @core.Any) -> @types.JiraIssue {
   let fields = data._get("fields")
-  let status = fields._get("status")._get("name")
-  let assignee = fields._get("assignee")
-  let issue_type = fields._get("issuetype")._get("name")
-  let priority = fields._get("priority")._get("name")
   let description_obj = fields._get("description")
   let description = if @core.is_nullish(description_obj) {
     ""
@@ -88,26 +63,14 @@ fn parse_issue(data : @core.Any) -> @types.JiraIssue {
   {
     key: get_string(data, "key"),
     summary: get_string(fields, "summary"),
-    status: if @core.is_nullish(status) {
-      ""
-    } else {
-      status.to_string()
-    },
-    assignee: if @core.is_nullish(assignee) {
-      "Unassigned"
-    } else {
-      get_string(assignee, "displayName")
-    },
-    issue_type: if @core.is_nullish(issue_type) {
-      ""
-    } else {
-      issue_type.to_string()
-    },
-    priority: if @core.is_nullish(priority) {
-      ""
-    } else {
-      priority.to_string()
-    },
+    status: get_string(fields._get("status"), "name"),
+    assignee: get_string(
+      fields._get("assignee"),
+      "displayName",
+      default="Unassigned",
+    ),
+    issue_type: get_string(fields._get("issuetype"), "name"),
+    priority: get_string(fields._get("priority"), "name"),
     description,
   }
 }
@@ -132,19 +95,15 @@ pub async fn list_issues(
   config : @types.JiraConfig,
   jql : String,
 ) -> Array[@types.JiraIssue] {
-  let fields : @core.Any = @core.any(
-    ["summary", "status", "assignee", "issuetype", "priority", "description"],
-  )
+  let fields : @core.Any = @core.any([
+    "summary", "status", "assignee", "issuetype", "priority", "description",
+  ])
   let body = @core.from_entries([
     ("jql", @core.any(jql)),
     ("maxResults", @core.any(20)),
     ("fields", fields),
   ])
-  let data = api_post(
-    config,
-    "/rest/api/3/search/jql",
-    @core.any(@core.json_stringify(body)),
-  )
+  let data = api_request(config, "POST", "/rest/api/3/search/jql", body~)
   parse_issues(data)
 }
 
@@ -153,7 +112,7 @@ pub async fn get_issue(
   config : @types.JiraConfig,
   key : String,
 ) -> @types.JiraIssue {
-  let data = api_get(config, "/rest/api/3/issue/\{key}")
+  let data = api_request(config, "GET", "/rest/api/3/issue/\{key}")
   parse_issue(data)
 }
 
@@ -182,17 +141,13 @@ pub async fn create_issue(
       ),
     ),
   ])
-  let result = api_post(
-    config,
-    "/rest/api/3/issue",
-    @core.any(@core.json_stringify(body)),
-  )
+  let result = api_request(config, "POST", "/rest/api/3/issue", body~)
   get_string(result, "key")
 }
 
 ///|
 async fn get_transitions(config : @types.JiraConfig, key : String) -> @core.Any {
-  api_get(config, "/rest/api/3/issue/\{key}/transitions")
+  api_request(config, "GET", "/rest/api/3/issue/\{key}/transitions")
 }
 
 ///|
@@ -204,10 +159,11 @@ async fn do_transition(
   let body = @core.from_entries([
     ("transition", @core.from_entries([("id", @core.any(transition_id))])),
   ])
-  let _ = api_post(
+  let _ = api_request(
     config,
+    "POST",
     "/rest/api/3/issue/\{key}/transitions",
-    @core.any(@core.json_stringify(body)),
+    body~,
   )
 }
 
@@ -236,17 +192,13 @@ pub async fn add_comment(
   text : String,
 ) -> Unit {
   let body = @core.from_entries([("body", build_adf_text(text))])
-  let _ = api_post(
-    config,
-    "/rest/api/3/issue/\{key}/comment",
-    @core.any(@core.json_stringify(body)),
-  )
+  let _ = api_request(config, "POST", "/rest/api/3/issue/\{key}/comment", body~)
 }
 
 ///|
 async fn search_users(config : @types.JiraConfig, email : String) -> @core.Any {
   let encoded = encode_uri_component(email)
-  api_get(config, "/rest/api/3/user/search?query=\{encoded}")
+  api_request(config, "GET", "/rest/api/3/user/search?query=\{encoded}")
 }
 
 ///|
@@ -261,18 +213,14 @@ pub async fn assign_issue(
   }
   let account_id = get_string(users[0], "accountId")
   let body = @core.from_entries([("accountId", @core.any(account_id))])
-  let _ = api_put(
-    config,
-    "/rest/api/3/issue/\{key}/assignee",
-    @core.any(@core.json_stringify(body)),
-  )
+  let _ = api_request(config, "PUT", "/rest/api/3/issue/\{key}/assignee", body~)
 }
 
 ///|
 pub async fn list_projects(
   config : @types.JiraConfig,
 ) -> Array[@types.JiraProject] {
-  let data = api_get(config, "/rest/api/3/project")
+  let data = api_request(config, "GET", "/rest/api/3/project")
   let projects = @core.array_from(data)
   projects.map(parse_project)
 }
