@@ -1,7 +1,15 @@
 ///|
-/// Entry point for the CLI or runnable program in this template.
-/// Keep main focused; move logic into the library package.
-/// Run with `moon run cmd/main` from the project root.
 fn main {
-  println("Hello")
+  @core.run_async(async fn() noraise {
+    try {
+      let args = @process.argv()[2:]
+      let output = @jira_cli_mbt.execute(@jira_cli_mbt.parse_args(args[:]))
+      println(output)
+    } catch {
+      e => {
+        println("Error: \{e}")
+        @process.exit(1)
+      }
+    }
+  })
 }

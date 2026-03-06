@@ -1,7 +1,10 @@
-// import {
-//   "username/jira_cli_mbt" @lib,
-// }
+import {
+  "Showichiro/jira_cli_mbt",
+  "mizchi/js/core",
+  "mizchi/js/node/process",
+}
 
 options(
   "is-main": true,
+  "supported-targets": [ "js" ],
 )

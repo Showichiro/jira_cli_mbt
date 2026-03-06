@@ -1,0 +1,89 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Showichiro/jira_cli_mbt"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub async fn add_comment(JiraConfig, String, String) -> Unit
+
+pub async fn assign_issue(JiraConfig, String, String) -> Unit
+
+pub async fn create_issue(JiraConfig, String, String, String, String) -> String
+
+pub async fn execute(Result[Command, String]) -> String
+
+pub fn format_issue_detail(JiraIssue) -> String
+
+pub fn format_issue_list(Array[JiraIssue]) -> String
+
+pub fn format_projects(Array[JiraProject]) -> String
+
+pub fn format_usage() -> String
+
+pub async fn get_issue(JiraConfig, String) -> JiraIssue
+
+pub async fn list_issues(JiraConfig, String) -> Array[JiraIssue]
+
+pub async fn list_projects(JiraConfig) -> Array[JiraProject]
+
+pub async fn load_config() -> JiraConfig
+
+pub fn parse_args(ArrayView[String]) -> Result[Command, String]
+
+pub async fn save_config(JiraConfig) -> Unit
+
+pub async fn transition_issue(JiraConfig, String, String) -> Unit
+
+// Errors
+pub suberror JiraApiError {
+  JiraApiError(String)
+}
+
+// Types and methods
+pub enum Command {
+  Config(base_url~ : String, email~ : String, api_token~ : String)
+  ListIssues(jql~ : String)
+  GetIssue(key~ : String)
+  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String)
+  Transition(key~ : String, status~ : String)
+  Comment(key~ : String, text~ : String)
+  Assign(key~ : String, email~ : String)
+  Search(jql~ : String)
+  ListProjects
+  Help
+}
+pub impl Show for Command
+
+pub struct JiraConfig {
+  base_url : String
+  email : String
+  api_token : String
+}
+pub impl Show for JiraConfig
+pub impl ToJson for JiraConfig
+pub impl @json.FromJson for JiraConfig
+
+pub struct JiraIssue {
+  key : String
+  summary : String
+  status : String
+  assignee : String
+  issue_type : String
+  priority : String
+  description : String
+}
+pub impl Show for JiraIssue
+
+pub struct JiraProject {
+  key : String
+  name : String
+  project_type : String
+}
+pub impl Show for JiraProject
+
+// Type aliases
+
+// Traits
+
