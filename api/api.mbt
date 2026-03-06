@@ -19,21 +19,19 @@ async fn api_request(
   if http_method != "GET" {
     headers["Content-Type"] = "application/json"
   }
-  let actual_body = if http_method != "GET" {
-    @core.any(@core.json_stringify(body))
+  let response = if http_method == "GET" {
+    @http.fetch(url, method_=http_method, headers~)
   } else {
-    body
+    let actual_body = @core.any(@core.json_stringify(body))
+    @http.fetch(url, method_=http_method, headers~, body=actual_body)
   }
-  let response = @http.fetch(
-    url,
-    method_=http_method,
-    headers~,
-    body=actual_body,
-  )
   guard response.ok else {
     raise JiraApiError(
       "API request failed: \{response.status} \{response.statusText}",
     )
+  }
+  if response.status == 204 {
+    return @core.any(())
   }
   response.json()
 }

@@ -21,29 +21,45 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
 }
 
 ///|
+fn collect_value(args : ArrayView[String]) -> (String, ArrayView[String]) {
+  let parts : Array[String] = []
+  let mut rest = args
+  while rest.length() > 0 && not(rest[0].has_prefix("--")) {
+    parts.push(rest[0])
+    rest = rest[1:]
+  }
+  (parts.join(" "), rest)
+}
+
+///|
+let flag_map : Map[String, String] = {
+  "--base-url": "base_url",
+  "--email": "email",
+  "--api-token": "api_token",
+  "--project": "project",
+  "--summary": "summary",
+  "--type": "issue_type",
+  "--description": "description",
+  "--jql": "jql",
+  "--key": "key",
+  "--status": "status",
+  "--text": "text",
+}
+
+///|
 fn parse_flags(
   args : ArrayView[String],
   acc : Map[String, String],
 ) -> Map[String, String] {
-  match args {
-    ["--base-url", value, .. rest] =>
-      parse_flags(rest, acc..set("base_url", value))
-    ["--email", value, .. rest] => parse_flags(rest, acc..set("email", value))
-    ["--api-token", value, .. rest] =>
-      parse_flags(rest, acc..set("api_token", value))
-    ["--project", value, .. rest] =>
-      parse_flags(rest, acc..set("project", value))
-    ["--summary", value, .. rest] =>
-      parse_flags(rest, acc..set("summary", value))
-    ["--type", value, .. rest] =>
-      parse_flags(rest, acc..set("issue_type", value))
-    ["--description", value, .. rest] =>
-      parse_flags(rest, acc..set("description", value))
-    ["--jql", value, .. rest] => parse_flags(rest, acc..set("jql", value))
-    ["--key", value, .. rest] => parse_flags(rest, acc..set("key", value))
-    ["--status", value, .. rest] => parse_flags(rest, acc..set("status", value))
-    ["--text", value, .. rest] => parse_flags(rest, acc..set("text", value))
-    _ => acc
+  if args.length() == 0 {
+    return acc
+  }
+  match flag_map.get(args[0]) {
+    Some(key) => {
+      let (value, rest) = collect_value(args[1:])
+      parse_flags(rest, acc..set(key, value))
+    }
+    None => acc
   }
 }
 
