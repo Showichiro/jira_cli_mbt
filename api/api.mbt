@@ -132,10 +132,18 @@ pub async fn list_issues(
   config : @types.JiraConfig,
   jql : String,
 ) -> Array[@types.JiraIssue] {
-  let encoded_jql = encode_uri_component(jql)
-  let data = api_get(
+  let fields : @core.Any = @core.any(
+    ["summary", "status", "assignee", "issuetype", "priority", "description"],
+  )
+  let body = @core.from_entries([
+    ("jql", @core.any(jql)),
+    ("maxResults", @core.any(20)),
+    ("fields", fields),
+  ])
+  let data = api_post(
     config,
-    "/rest/api/3/search?jql=\{encoded_jql}&maxResults=20",
+    "/rest/api/3/search/jql",
+    @core.any(@core.json_stringify(body)),
   )
   parse_issues(data)
 }

@@ -1,5 +1,6 @@
 import {
   "Showichiro/jira_cli_mbt",
+  "Showichiro/jira_cli_mbt/api",
   "mizchi/js/core",
   "mizchi/js/node/process",
 }
