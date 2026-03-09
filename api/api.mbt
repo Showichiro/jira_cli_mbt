@@ -284,6 +284,63 @@ pub async fn create_issue(
 }
 
 ///|
+pub async fn update_issue(
+  config : @types.JiraConfig,
+  key : String,
+  summary : String,
+  description : String,
+  priority : String,
+  issue_type : String,
+  labels : String,
+  assignee : String,
+  custom_fields : Map[String, String],
+) -> Unit {
+  let field_entries : Array[(String, @core.Any)] = []
+  if summary.length() > 0 {
+    field_entries.push(("summary", @core.any(summary)))
+  }
+  if description.length() > 0 {
+    field_entries.push(("description", build_adf_text(description)))
+  }
+  if priority.length() > 0 {
+    field_entries.push(
+      ("priority", @core.from_entries([("name", @core.any(priority))])),
+    )
+  }
+  if issue_type.length() > 0 {
+    field_entries.push(
+      ("issuetype", @core.from_entries([("name", @core.any(issue_type))])),
+    )
+  }
+  if labels.length() > 0 {
+    let label_array = labels
+      .split(",")
+      .map(fn(l) { l.trim().to_string() })
+      .filter(fn(l) { l.length() > 0 })
+      .to_array()
+    field_entries.push(("labels", @core.any(label_array)))
+  }
+  for entry in custom_fields {
+    let value = entry.1
+    let custom_value = if is_numeric(value) {
+      @core.from_entries([("id", @core.any(value))])
+    } else {
+      @core.any(value)
+    }
+    field_entries.push((entry.0, custom_value))
+  }
+  if not(field_entries.is_empty()) {
+    let body = @core.from_entries([
+      ("fields", @core.from_entries(field_entries)),
+    ])
+    let _ = api_request(config, "PUT", "/rest/api/3/issue/\{key}", body~)
+  }
+  if assignee.length() > 0 {
+    assign_issue(config, key, assignee)
+  }
+}
+
+///|
 async fn get_transitions(config : @types.JiraConfig, key : String) -> @core.Any {
   api_request(config, "GET", "/rest/api/3/issue/\{key}/transitions")
 }
@@ -387,6 +444,20 @@ pub async fn list_projects(
   let data = api_request(config, "GET", "/rest/api/3/project")
   let projects = @core.array_from(data)
   projects.map(parse_project)
+}
+
+///|
+fn is_numeric(s : String) -> Bool {
+  if s.length() == 0 {
+    return false
+  }
+  for i in 0..<s.length() {
+    let c = s[i].to_int().unsafe_to_char()
+    if c < '0' || c > '9' {
+      return false
+    }
+  }
+  true
 }
 
 ///|

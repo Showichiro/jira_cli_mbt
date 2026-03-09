@@ -41,6 +41,25 @@ pub async fn execute(cmd : Result[@types.Command, String]) -> String {
       )
       "Issue created: \{key}"
     }
+    Ok(
+      @types.UpdateIssue(
+        key~,
+        summary~,
+        description~,
+        priority~,
+        issue_type~,
+        labels~,
+        assignee~,
+        custom_fields~
+      )
+    ) => {
+      let config = @config.load_config()
+      @api.update_issue(
+        config, key, summary, description, priority, issue_type, labels, assignee,
+        custom_fields,
+      )
+      "Issue \{key} updated"
+    }
     Ok(@types.Transition(key~, status~)) => {
       let config = @config.load_config()
       @api.transition_issue(config, key, status)

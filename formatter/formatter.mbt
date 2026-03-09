@@ -101,6 +101,7 @@ pub fn format_usage() -> String {
     "  issue       Get issue details", "              <key> [--fields <field,...>]",
     "              fields: key,summary,status,assignee,type,priority,description,customfield_<id>",
     "  create      Create a new issue", "              --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...",
+    "  update      Update an existing issue", "              <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...",
     "  transition  Transition issue status", "              --key <key> --status <status>",
     "  comment     Add comment to issue", "              --key <key> --text <text>",
     "  assign      Assign issue to user", "              --key <key> --email <email>",

@@ -10,6 +10,7 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
     ["issue", key, .. rest] => parse_issue_cmd(key, rest)
     ["issue", ..] => Err("Usage: issue <key>")
     ["create", .. rest] => parse_create(rest)
+    ["update", .. rest] => parse_update(rest)
     ["transition", .. rest] => parse_transition(rest)
     ["comment", .. rest] => parse_comment(rest)
     ["assign", .. rest] => parse_assign(rest)
@@ -332,5 +333,69 @@ fn parse_search(args : ArrayView[String]) -> Result[@types.Command, String] {
         None => Err("Usage: search --jql <jql>")
       }
     Err(message) => Err(message)
+  }
+}
+
+///|
+let update_flags : Map[String, String] = {
+  "--summary": "summary",
+  "--description": "description",
+  "--priority": "priority",
+  "--type": "issue_type",
+  "--labels": "labels",
+  "--assignee": "assignee",
+}
+
+///|
+let update_usage : String = "Usage: update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]..."
+
+///|
+fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {
+  guard args.length() > 0 && not(args[0].has_prefix("--")) else {
+    return Err(update_usage)
+  }
+  let key = args[0]
+  let rest = args[1:]
+  match extract_set_flags(rest) {
+    Err(message) => Err(message)
+    Ok((set_entries, remaining)) =>
+      match parse_flags(remaining[:], update_flags, {}) {
+        Err(message) => Err(message)
+        Ok(flags) => {
+          let summary = flags.get("summary").unwrap_or("")
+          let description = flags.get("description").unwrap_or("")
+          let priority = flags.get("priority").unwrap_or("")
+          let issue_type = flags.get("issue_type").unwrap_or("")
+          let labels = flags.get("labels").unwrap_or("")
+          let assignee = flags.get("assignee").unwrap_or("")
+          let custom_fields : Map[String, String] = {}
+          for entry in set_entries {
+            custom_fields[entry.0] = entry.1
+          }
+          guard summary.length() > 0 ||
+            description.length() > 0 ||
+            priority.length() > 0 ||
+            issue_type.length() > 0 ||
+            labels.length() > 0 ||
+            assignee.length() > 0 ||
+            custom_fields.length() > 0 else {
+            return Err(
+              "At least one field must be specified for update\n" + update_usage,
+            )
+          }
+          Ok(
+            @types.UpdateIssue(
+              key~,
+              summary~,
+              description~,
+              priority~,
+              issue_type~,
+              labels~,
+              assignee~,
+              custom_fields~,
+            ),
+          )
+        }
+      }
   }
 }

@@ -20,6 +20,8 @@ pub async fn list_projects(@types.JiraConfig) -> Array[@types.JiraProject]
 
 pub async fn transition_issue(@types.JiraConfig, String, String) -> Unit
 
+pub async fn update_issue(@types.JiraConfig, String, String, String, String, String, String, String, Map[String, String]) -> Unit
+
 // Errors
 pub suberror JiraApiError {
   JiraApiError(String)
