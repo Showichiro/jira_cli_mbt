@@ -308,3 +308,88 @@ test "parse_args: disallowed flag returns error per subcommand" {
     content="Err(\"Unknown flag or unexpected argument: --email\")",
   )
 }
+
+///|
+test "parse_args: update with summary" {
+  inspect(
+    @parser.parse_args(["update", "TEST-1", "--summary", "New title"][:]),
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"New title\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={}))",
+  )
+}
+
+///|
+test "parse_args: update with priority and labels" {
+  inspect(
+    @parser.parse_args(
+      ["update", "TEST-1", "--priority", "High", "--labels", "bug,urgent"][:],
+    ),
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"High\", issue_type=\"\", labels=\"bug,urgent\", assignee=\"\", custom_fields={}))",
+  )
+}
+
+///|
+test "parse_args: update with assignee only" {
+  inspect(
+    @parser.parse_args(
+      ["update", "TEST-1", "--assignee", "user@example.com"][:],
+    ),
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"user@example.com\", custom_fields={}))",
+  )
+}
+
+///|
+test "parse_args: update with description and custom field" {
+  inspect(
+    @parser.parse_args(
+      [
+        "update", "TEST-1", "--description", "New desc", "--set", "customfield_123=value",
+      ][:],
+    ),
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"New desc\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={\"customfield_123\": \"value\"}))",
+  )
+}
+
+///|
+test "parse_args: update with type only" {
+  inspect(
+    @parser.parse_args(["update", "TEST-1", "--type", "Bug"][:]),
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"\", issue_type=\"Bug\", labels=\"\", assignee=\"\", custom_fields={}))",
+  )
+}
+
+///|
+test "parse_args: update with all flags" {
+  inspect(
+    @parser.parse_args(
+      [
+        "update", "TEST-1", "--summary", "title", "--description", "desc", "--priority",
+        "High", "--type", "Bug", "--labels", "bug", "--assignee", "a@b.com", "--set",
+        "customfield_123=val",
+      ][:],
+    ),
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"title\", description=\"desc\", priority=\"High\", issue_type=\"Bug\", labels=\"bug\", assignee=\"a@b.com\", custom_fields={\"customfield_123\": \"val\"}))",
+  )
+}
+
+///|
+test "parse_args: update missing key" {
+  assert_true(@parser.parse_args(["update"][:]) is Err(_))
+}
+
+///|
+test "parse_args: update no fields specified" {
+  let result = @parser.parse_args(["update", "TEST-1"][:])
+  assert_true(result is Err(_))
+  match result {
+    Err(msg) => {
+      assert_true(msg.contains("At least one field must be specified"))
+      assert_true(msg.contains("Usage: update"))
+    }
+    _ => ()
+  }
+}
+
+///|
+test "parse_args: update key starts with -- is treated as missing key" {
+  assert_true(@parser.parse_args(["update", "--summary", "title"][:]) is Err(_))
+}

@@ -8,4 +8,5 @@ test "format_usage: contains all commands" {
   assert_true(usage.contains("transition"))
   assert_true(usage.contains("comment"))
   assert_true(usage.contains("assign"))
+  assert_true(usage.contains("update"))
 }

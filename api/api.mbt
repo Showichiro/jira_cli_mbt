@@ -259,7 +259,7 @@ pub async fn create_issue(
 ) -> String {
   let custom_entries : Array[(String, @core.Any)] = custom_fields
     .iter()
-    .map(fn(entry) { (entry.0, @core.any(entry.1)) })
+    .map(fn(entry) { (entry.0, custom_field_value(entry.1)) })
     .to_array()
   let body = @core.from_entries([
     (
@@ -281,6 +281,68 @@ pub async fn create_issue(
   ])
   let result = api_request(config, "POST", "/rest/api/3/issue", body~)
   get_string(result, "key")
+}
+
+///|
+pub async fn update_issue(
+  config : @types.JiraConfig,
+  key~ : String,
+  summary~ : String,
+  description~ : String,
+  priority~ : String,
+  issue_type~ : String,
+  labels~ : String,
+  assignee~ : String,
+  custom_fields~ : Map[String, String],
+) -> Unit {
+  let field_entries : Array[(String, @core.Any)] = []
+  if summary.length() > 0 {
+    field_entries.push(("summary", @core.any(summary)))
+  }
+  if description.length() > 0 {
+    field_entries.push(("description", build_adf_text(description)))
+  }
+  if priority.length() > 0 {
+    field_entries.push(
+      ("priority", @core.from_entries([("name", @core.any(priority))])),
+    )
+  }
+  if issue_type.length() > 0 {
+    field_entries.push(
+      ("issuetype", @core.from_entries([("name", @core.any(issue_type))])),
+    )
+  }
+  if labels.length() > 0 {
+    let label_array = labels
+      .split(",")
+      .map(fn(l) { l.trim().to_string() })
+      .filter(fn(l) { l.length() > 0 })
+      .to_array()
+    field_entries.push(("labels", @core.any(label_array)))
+  }
+  for entry in custom_fields {
+    field_entries.push((entry.0, custom_field_value(entry.1)))
+  }
+  let fields_updated = not(field_entries.is_empty())
+  if fields_updated {
+    let body = @core.from_entries([
+      ("fields", @core.from_entries(field_entries)),
+    ])
+    let _ = api_request(config, "PUT", "/rest/api/3/issue/\{key}", body~)
+  }
+  if assignee.length() > 0 {
+    assign_issue(config, key, assignee) catch {
+      JiraApiError(msg) =>
+        raise JiraApiError(
+          if fields_updated {
+            "Fields updated but assignee change failed: " + msg
+          } else {
+            msg
+          },
+        )
+      e => raise e
+    }
+  }
 }
 
 ///|
@@ -387,6 +449,29 @@ pub async fn list_projects(
   let data = api_request(config, "GET", "/rest/api/3/project")
   let projects = @core.array_from(data)
   projects.map(parse_project)
+}
+
+///|
+fn custom_field_value(value : String) -> @core.Any {
+  if is_numeric(value) {
+    @core.from_entries([("id", @core.any(value))])
+  } else {
+    @core.any(value)
+  }
+}
+
+///|
+fn is_numeric(s : String) -> Bool {
+  if s.length() == 0 {
+    return false
+  }
+  for i in 0..<s.length() {
+    let c = s[i].to_int().unsafe_to_char()
+    if c < '0' || c > '9' {
+      return false
+    }
+  }
+  true
 }
 
 ///|

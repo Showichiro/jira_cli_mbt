@@ -145,6 +145,16 @@ pub(all) enum Command {
     description~ : String,
     custom_fields~ : Map[String, String]
   )
+  UpdateIssue(
+    key~ : String,
+    summary~ : String,
+    description~ : String,
+    priority~ : String,
+    issue_type~ : String,
+    labels~ : String,
+    assignee~ : String,
+    custom_fields~ : Map[String, String]
+  )
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
   Assign(key~ : String, email~ : String)
