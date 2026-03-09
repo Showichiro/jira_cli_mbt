@@ -12,6 +12,10 @@
   ],
   "scripts": {
     "build": "moon build --target js && node scripts/bundle.mjs",
+    "check": "moon check --target js",
+    "test": "moon test --target js",
+    "info": "moon info --target js",
+    "fmt": "moon fmt",
     "prepublishOnly": "npm run build"
   },
   "license": "Apache-2.0",

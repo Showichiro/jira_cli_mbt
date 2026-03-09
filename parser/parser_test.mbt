@@ -124,3 +124,21 @@ test "parse_args: projects" {
 test "parse_args: unknown command" {
   assert_true(@parser.parse_args(["unknown"][:]) is Err(_))
 }
+
+///|
+test "parse_args: unknown flag returns error" {
+  inspect(
+    @parser.parse_args(
+      ["issues", "--unknown", "x", "--jql", "project = TEST"][:],
+    ),
+    content="Err(\"Unknown flag or unexpected argument: --unknown\")",
+  )
+}
+
+///|
+test "parse_args: missing value returns error" {
+  inspect(
+    @parser.parse_args(["create", "--project", "PROJ", "--summary"][:]),
+    content="Err(\"Missing value for flag: --summary\")",
+  )
+}

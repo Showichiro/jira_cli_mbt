@@ -9,15 +9,29 @@ fn config_path() -> String {
 }
 
 ///|
+fn decode_config(content : String) -> Result[@types.JiraConfig, String] {
+  let json : Json = @json.parse(content) catch {
+    e => return Err("Failed to parse config JSON: \{e}")
+  }
+  let config : @types.JiraConfig = @json.from_json(json) catch {
+    e => return Err("Invalid config schema: \{e}")
+  }
+  Ok(config)
+}
+
+///|
 pub async fn load_config() -> @types.JiraConfig {
-  let content = read_file(config_path()) catch {
-    _ =>
+  let path = config_path()
+  let content = read_file(path) catch {
+    e =>
       raise ConfigError(
-        "Config not found. Run: jira config --base-url <url> --email <email> --api-token <token>",
+        "Failed to read config at \{path}. Run: jira config --base-url <url> --email <email> --api-token <token>. Details: \{e}",
       )
   }
-  let json : Json = @json.parse(content)
-  @json.from_json(json)
+  match decode_config(content) {
+    Ok(config) => config
+    Err(message) => raise ConfigError("\{message} (\{path})")
+  }
 }
 
 ///|
