@@ -47,6 +47,7 @@ test "parse_issue with all fields" {
         ("issuetype", @core.from_entries([("name", @core.any("Bug"))])),
         ("priority", @core.from_entries([("name", @core.any("High"))])),
         ("description", description),
+        ("customfield_12345", @core.any("Platform Team")),
       ]),
     ),
   ])
@@ -58,6 +59,7 @@ test "parse_issue with all fields" {
   assert_eq(issue.issue_type, "Bug")
   assert_eq(issue.priority, "High")
   assert_eq(issue.description, "Test description")
+  assert_eq(issue.custom_fields["customfield_12345"], "Platform Team")
 }
 
 ///|
@@ -79,6 +81,21 @@ test "parse_issue with null assignee and description" {
   let issue = parse_issue(data)
   assert_eq(issue.assignee, "Unassigned")
   assert_eq(issue.description, "")
+}
+
+///|
+test "any_to_display_string handles object and array custom field values" {
+  let value = any_to_display_string(
+    @core.from_entries([("displayName", @core.any("Platform Team"))]),
+  )
+  let array_value = any_to_display_string(
+    @core.any([
+      @core.from_entries([("name", @core.any("Backend"))]),
+      @core.from_entries([("value", @core.any("Urgent"))]),
+    ]),
+  )
+  assert_eq(value, "Platform Team")
+  assert_eq(array_value, "Backend, Urgent")
 }
 
 ///|
@@ -127,6 +144,52 @@ test "parse_project" {
   assert_eq(project.key, "PROJ")
   assert_eq(project.name, "My Project")
   assert_eq(project.project_type, "software")
+}
+
+///|
+test "requested_api_fields excludes key and dedups aliases" {
+  inspect(
+    requested_api_fields([
+      @types.Key,
+      @types.Summary,
+      @types.IssueType,
+      @types.IssueType,
+      @types.Custom("customfield_12345"),
+    ]),
+    content="[\"summary\", \"issuetype\", \"customfield_12345\"]",
+  )
+}
+
+///|
+test "build_search_body includes requested fields" {
+  inspect(
+    @core.json_stringify_pretty(
+      build_search_body("project = TEST", [
+        @types.Key,
+        @types.Summary,
+        @types.Assignee,
+      ]),
+      2,
+    ),
+    content=(
+      #|{
+      #|  "jql": "project = TEST",
+      #|  "maxResults": 20,
+      #|  "fields": [
+      #|    "summary",
+      #|    "assignee"
+      #|  ]
+      #|}
+    ),
+  )
+}
+
+///|
+test "build_issue_path omits query when key only" {
+  inspect(
+    build_issue_path("TEST-1", [@types.Key]),
+    content="/rest/api/3/issue/TEST-1",
+  )
 }
 
 ///|

@@ -6,9 +6,9 @@ import {
 }
 
 // Values
-pub fn format_issue_detail(@types.JiraIssue) -> String
+pub fn format_issue_detail(@types.JiraIssue, Array[@types.IssueField]) -> String
 
-pub fn format_issue_list(Array[@types.JiraIssue]) -> String
+pub fn format_issue_list(Array[@types.JiraIssue], Array[@types.IssueField]) -> String
 
 pub fn format_projects(Array[@types.JiraProject]) -> String
 

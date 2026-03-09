@@ -36,3 +36,27 @@ test "parse_flags: reject globally known but disallowed flag" {
     content="Err(\"Unknown flag or unexpected argument: --email\")",
   )
 }
+
+///|
+test "parse_issue_fields: trims aliases and dedups" {
+  inspect(
+    parse_issue_fields(" summary, type ,summary "),
+    content="Ok([Summary, IssueType])",
+  )
+}
+
+///|
+test "parse_issue_fields: accepts custom jira fields" {
+  inspect(
+    parse_issue_fields("customfield_12345, customfield_12345"),
+    content="Ok([Custom(\"customfield_12345\")])",
+  )
+}
+
+///|
+test "parse_issue_fields: empty list" {
+  inspect(
+    parse_issue_fields(" , "),
+    content="Err(\"Field list must not be empty\")",
+  )
+}

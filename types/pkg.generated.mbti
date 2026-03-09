@@ -6,14 +6,19 @@ import {
 }
 
 // Values
+pub fn default_detail_issue_fields() -> Array[IssueField]
+
+pub fn default_list_issue_fields() -> Array[IssueField]
+
+pub fn parse_issue_field(String) -> Result[IssueField, String]
 
 // Errors
 
 // Types and methods
 pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String)
-  ListIssues(jql~ : String)
-  GetIssue(key~ : String)
+  ListIssues(jql~ : String, fields~ : Array[IssueField])
+  GetIssue(key~ : String, fields~ : Array[IssueField])
   CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String)
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
@@ -23,6 +28,23 @@ pub(all) enum Command {
   Help
 }
 pub impl Show for Command
+
+pub(all) enum IssueField {
+  Key
+  Summary
+  Status
+  Assignee
+  IssueType
+  Priority
+  Description
+  Custom(String)
+}
+pub fn IssueField::api_name(Self) -> String
+pub fn IssueField::detail_label(Self) -> String
+pub fn IssueField::list_header(Self) -> String
+pub fn IssueField::table_width(Self) -> Int
+pub impl Eq for IssueField
+pub impl Show for IssueField
 
 pub(all) struct JiraConfig {
   base_url : String
@@ -41,7 +63,9 @@ pub(all) struct JiraIssue {
   issue_type : String
   priority : String
   description : String
+  custom_fields : Map[String, String]
 }
+pub fn JiraIssue::field_value(Self, IssueField) -> String
 pub impl Show for JiraIssue
 
 pub(all) struct JiraProject {
