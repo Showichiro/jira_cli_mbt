@@ -1,4 +1,40 @@
 ///|
+fn parse_error_response(data : @core.Any) -> String {
+  let parts : Array[String] = []
+  let messages = data._get("errorMessages")
+  if not(@core.is_nullish(messages)) {
+    let arr = @core.array_from(messages)
+    for msg in arr {
+      if not(@core.is_nullish(msg)) {
+        parts.push(msg.to_string())
+      }
+    }
+  }
+  let errors = data._get("errors")
+  if not(@core.is_nullish(errors)) {
+    let keys = @core.object_keys(errors)
+    for k in keys {
+      parts.push("'\{k}': \{errors._get(k).to_string()}")
+    }
+  }
+  parts.join(", ")
+}
+
+///|
+fn truncate_string(s : String, max_len : Int) -> String {
+  if s.length() <= max_len {
+    s
+  } else {
+    let buf = StringBuilder::new()
+    for i in 0..<max_len {
+      buf.write_char(s[i].to_int().unsafe_to_char())
+    }
+    buf.write_string("...")
+    buf.to_string()
+  }
+}
+
+///|
 fn auth_header(config : @types.JiraConfig) -> String {
   let credentials = base64_encode(config.email + ":" + config.api_token)
   "Basic " + credentials
@@ -26,8 +62,19 @@ async fn api_request(
     @http.fetch(url, method_=http_method, headers~, body=actual_body)
   }
   guard response.ok else {
+    let error_detail = parse_error_response(response.clone().json()) catch {
+      _ =>
+        truncate_string(response.text(), 200) catch {
+          _ => "(response body could not be read)"
+        }
+    }
+    let msg = "API request failed: \{response.status} \{response.statusText}"
     raise JiraApiError(
-      "API request failed: \{response.status} \{response.statusText}",
+      if error_detail == "" {
+        msg
+      } else {
+        msg + " - " + error_detail
+      },
     )
   }
   if response.status == 204 {
