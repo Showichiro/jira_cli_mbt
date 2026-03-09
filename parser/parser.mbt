@@ -233,14 +233,17 @@ fn extract_set_flags(
   let mut i = 0
   while i < args.length() {
     if args[i] == "--set" {
-      guard i + 1 < args.length() && not(args[i + 1].has_prefix("--")) else {
-        return Err("Missing value for flag: --set")
-      }
-      match parse_one_set_entry(args[i + 1]) {
-        Ok(entry) => set_entries.push(entry)
+      match collect_value("--set", args[i + 1:]) {
         Err(msg) => return Err(msg)
+        Ok((value, remaining)) => {
+          match parse_one_set_entry(value) {
+            Ok(entry) => set_entries.push(entry)
+            Err(msg) => return Err(msg)
+          }
+          let consumed = args.length() - i - 1 - remaining.length()
+          i = i + 1 + consumed
+        }
       }
-      i = i + 2
     } else {
       rest.push(args[i])
       i = i + 1

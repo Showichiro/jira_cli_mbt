@@ -216,6 +216,32 @@ test "parse_args: create --set customfield_ without id errors" {
 }
 
 ///|
+test "parse_args: create --set multi-word value" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=hello",
+        "world",
+      ][:],
+    ),
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"hello world\"}))",
+  )
+}
+
+///|
+test "parse_args: create --set multi-word value followed by another flag" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=hello",
+        "world", "--set", "customfield_456=bar",
+      ][:],
+    ),
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"hello world\", \"customfield_456\": \"bar\"}))",
+  )
+}
+
+///|
 test "parse_args: transition" {
   inspect(
     @parser.parse_args(["transition", "--key", "PROJ-1", "--status", "Done"][:]),
