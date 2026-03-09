@@ -38,32 +38,52 @@ fn collect_value(
 }
 
 ///|
-let flag_map : Map[String, String] = {
+let config_flags : Map[String, String] = {
   "--base-url": "base_url",
   "--email": "email",
   "--api-token": "api_token",
+}
+
+///|
+let issues_flags : Map[String, String] = { "--jql": "jql" }
+
+///|
+let create_flags : Map[String, String] = {
   "--project": "project",
   "--summary": "summary",
   "--type": "issue_type",
   "--description": "description",
-  "--jql": "jql",
+}
+
+///|
+let transition_flags : Map[String, String] = {
   "--key": "key",
   "--status": "status",
-  "--text": "text",
 }
+
+///|
+let comment_flags : Map[String, String] = { "--key": "key", "--text": "text" }
+
+///|
+let assign_flags : Map[String, String] = { "--key": "key", "--email": "email" }
+
+///|
+let search_flags : Map[String, String] = { "--jql": "jql" }
 
 ///|
 fn parse_flags(
   args : ArrayView[String],
+  allowed_flags : Map[String, String],
   acc : Map[String, String],
 ) -> Result[Map[String, String], String] {
   if args.length() == 0 {
     return Ok(acc)
   }
-  match flag_map.get(args[0]) {
+  match allowed_flags.get(args[0]) {
     Some(key) =>
       match collect_value(args[0], args[1:]) {
-        Ok((value, rest)) => parse_flags(rest, acc..set(key, value))
+        Ok((value, rest)) =>
+          parse_flags(rest, allowed_flags, acc..set(key, value))
         Err(message) => Err(message)
       }
     None => Err("Unknown flag or unexpected argument: \{args[0]}")
@@ -72,7 +92,7 @@ fn parse_flags(
 
 ///|
 fn parse_config(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, {}) {
+  match parse_flags(args, config_flags, {}) {
     Ok(flags) =>
       match
         (flags.get("base_url"), flags.get("email"), flags.get("api_token")) {
@@ -89,7 +109,7 @@ fn parse_config(args : ArrayView[String]) -> Result[@types.Command, String] {
 
 ///|
 fn parse_issues_cmd(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, {}) {
+  match parse_flags(args, issues_flags, {}) {
     Ok(flags) => {
       let jql = flags.get("jql").unwrap_or(default_jql)
       Ok(@types.ListIssues(jql~))
@@ -100,7 +120,7 @@ fn parse_issues_cmd(args : ArrayView[String]) -> Result[@types.Command, String] 
 
 ///|
 fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, {}) {
+  match parse_flags(args, create_flags, {}) {
     Ok(flags) =>
       match (flags.get("project"), flags.get("summary")) {
         (Some(project), Some(summary)) => {
@@ -119,7 +139,7 @@ fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
 
 ///|
 fn parse_transition(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, {}) {
+  match parse_flags(args, transition_flags, {}) {
     Ok(flags) =>
       match (flags.get("key"), flags.get("status")) {
         (Some(key), Some(status)) => Ok(@types.Transition(key~, status~))
@@ -131,7 +151,7 @@ fn parse_transition(args : ArrayView[String]) -> Result[@types.Command, String] 
 
 ///|
 fn parse_comment(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, {}) {
+  match parse_flags(args, comment_flags, {}) {
     Ok(flags) =>
       match (flags.get("key"), flags.get("text")) {
         (Some(key), Some(text)) => Ok(@types.Comment(key~, text~))
@@ -143,7 +163,7 @@ fn parse_comment(args : ArrayView[String]) -> Result[@types.Command, String] {
 
 ///|
 fn parse_assign(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, {}) {
+  match parse_flags(args, assign_flags, {}) {
     Ok(flags) =>
       match (flags.get("key"), flags.get("email")) {
         (Some(key), Some(email)) => Ok(@types.Assign(key~, email~))
@@ -155,7 +175,7 @@ fn parse_assign(args : ArrayView[String]) -> Result[@types.Command, String] {
 
 ///|
 fn parse_search(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, {}) {
+  match parse_flags(args, search_flags, {}) {
     Ok(flags) =>
       match flags.get("jql") {
         Some(jql) => Ok(@types.Search(jql~))

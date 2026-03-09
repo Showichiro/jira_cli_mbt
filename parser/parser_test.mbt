@@ -142,3 +142,11 @@ test "parse_args: missing value returns error" {
     content="Err(\"Missing value for flag: --summary\")",
   )
 }
+
+///|
+test "parse_args: disallowed flag returns error per subcommand" {
+  inspect(
+    @parser.parse_args(["issues", "--email", "a@b.com"][:]),
+    content="Err(\"Unknown flag or unexpected argument: --email\")",
+  )
+}
