@@ -223,6 +223,59 @@ test "select_user_account_id rejects ambiguous results" {
 }
 
 ///|
+test "parse_error_response with errorMessages only" {
+  let data = @core.from_entries([
+    (
+      "errorMessages",
+      @core.any([@core.any("Field is required"), @core.any("Invalid value")]),
+    ),
+  ])
+  assert_eq(parse_error_response(data), "Field is required, Invalid value")
+}
+
+///|
+test "parse_error_response with errors only" {
+  let data = @core.from_entries([
+    (
+      "errors",
+      @core.from_entries([("customfield_12345", @core.any("cannot be set"))]),
+    ),
+  ])
+  assert_eq(parse_error_response(data), "'customfield_12345': cannot be set")
+}
+
+///|
+test "parse_error_response with both errorMessages and errors" {
+  let data = @core.from_entries([
+    ("errorMessages", @core.any([@core.any("Issue type is required")])),
+    (
+      "errors",
+      @core.from_entries([("customfield_999", @core.any("invalid value"))]),
+    ),
+  ])
+  assert_eq(
+    parse_error_response(data),
+    "Issue type is required, 'customfield_999': invalid value",
+  )
+}
+
+///|
+test "parse_error_response with empty/nullish data" {
+  let data = @core.from_entries([])
+  assert_eq(parse_error_response(data), "")
+}
+
+///|
+test "truncate_string within limit" {
+  assert_eq(truncate_string("hello", 10), "hello")
+}
+
+///|
+test "truncate_string exceeds limit" {
+  assert_eq(truncate_string("hello world", 5), "hello...")
+}
+
+///|
 test "build_adf_text with empty string" {
   let adf = build_adf_text("")
   let json_str = @core.json_stringify_pretty(adf, 2)
