@@ -19,7 +19,7 @@ pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String)
   ListIssues(jql~ : String, fields~ : Array[IssueField])
   GetIssue(key~ : String, fields~ : Array[IssueField])
-  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String)
+  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, String])
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
   Assign(key~ : String, email~ : String)

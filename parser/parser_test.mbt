@@ -100,7 +100,7 @@ test "parse_args: create issue" {
     @parser.parse_args(
       ["create", "--project", "PROJ", "--summary", "Fix bug"][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\"))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}))",
   )
 }
 
@@ -113,7 +113,81 @@ test "parse_args: create with type and description" {
         "Details",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Bug\", description=\"Details\"))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Bug\", description=\"Details\", custom_fields={}))",
+  )
+}
+
+///|
+test "parse_args: create with one --set flag" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_12345=High",
+      ][:],
+    ),
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_12345\": \"High\"}))",
+  )
+}
+
+///|
+test "parse_args: create with multiple --set flags" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_12345=High",
+        "--set", "customfield_67890=Team A",
+      ][:],
+    ),
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_12345\": \"High\", \"customfield_67890\": \"Team A\"}))",
+  )
+}
+
+///|
+test "parse_args: create --set value contains equals sign" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=a=b",
+      ][:],
+    ),
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"a=b\"}))",
+  )
+}
+
+///|
+test "parse_args: create --set without customfield_ prefix errors" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "priority=High",
+      ][:],
+    ),
+    content="Err(\"Only customfield_* fields are allowed with --set, got: 'priority'\")",
+  )
+}
+
+///|
+test "parse_args: create --set without equals sign errors" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_12345",
+      ][:],
+    ),
+    content="Err(\"Invalid --set format: 'customfield_12345'. Expected 'customfield_<id>=<value>'\")",
+  )
+}
+
+///|
+test "parse_args: create --set duplicate key last wins" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=first",
+        "--set", "customfield_123=second",
+      ][:],
+    ),
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"second\"}))",
   )
 }
 

@@ -100,7 +100,7 @@ pub fn format_usage() -> String {
     "  issues      List assigned issues (default JQL)", "              [--jql <jql>] [--fields <field,...>]",
     "  issue       Get issue details", "              <key> [--fields <field,...>]",
     "              fields: key,summary,status,assignee,type,priority,description,customfield_<id>",
-    "  create      Create a new issue", "              --project <key> --summary <text> [--type <type>] [--description <text>]",
+    "  create      Create a new issue", "              --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...",
     "  transition  Transition issue status", "              --key <key> --status <status>",
     "  comment     Add comment to issue", "              --key <key> --text <text>",
     "  assign      Assign issue to user", "              --key <key> --email <email>",
