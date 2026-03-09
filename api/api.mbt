@@ -50,6 +50,53 @@ fn get_string(obj : @core.Any, key : String, default? : String = "") -> String {
 }
 
 ///|
+fn any_to_display_string(value : @core.Any) -> String {
+  if @core.is_nullish(value) {
+    ""
+  } else {
+    match @core.typeof_(value) {
+      "string" | "number" | "boolean" | "bigint" => value.to_string()
+      "object" =>
+        if @core.is_array(value) {
+          @core.array_from(value)
+          .map(any_to_display_string)
+          .filter(fn(item) { item.length() > 0 })
+          .join(", ")
+        } else {
+          match
+            (
+              get_string(value, "type"),
+              get_string(value, "displayName"),
+              get_string(value, "name"),
+              get_string(value, "value"),
+            ) {
+            ("doc", _, _, _) => extract_adf_text(value)
+            (_, display_name, _, _) if display_name.length() > 0 => display_name
+            (_, _, name, _) if name.length() > 0 => name
+            (_, _, _, field_value) if field_value.length() > 0 => field_value
+            _ => @core.json_stringify(value)
+          }
+        }
+      _ => value.to_string()
+    }
+  }
+}
+
+///|
+fn extract_custom_fields(fields : @core.Any) -> Map[String, String] {
+  @core.object_keys(fields)
+  .filter(fn(name) { name.has_prefix("customfield_") })
+  .fold(init={}, fn(acc, name) {
+    let value = any_to_display_string(fields._get(name))
+    if value.length() == 0 {
+      acc
+    } else {
+      acc..set(name, value)
+    }
+  })
+}
+
+///|
 fn parse_issue(data : @core.Any) -> @types.JiraIssue {
   let fields = data._get("fields")
   let description_obj = fields._get("description")
@@ -70,6 +117,7 @@ fn parse_issue(data : @core.Any) -> @types.JiraIssue {
     issue_type: get_string(fields._get("issuetype"), "name"),
     priority: get_string(fields._get("priority"), "name"),
     description,
+    custom_fields: extract_custom_fields(fields),
   }
 }
 
@@ -89,18 +137,56 @@ fn parse_project(data : @core.Any) -> @types.JiraProject {
 }
 
 ///|
+fn requested_api_fields(fields : Array[@types.IssueField]) -> Array[String] {
+  fields
+  .map(fn(field) { field.api_name() })
+  .filter(fn(name) { name != "key" })
+  .fold(init=[], fn(acc, name) {
+    if acc.contains(name) {
+      acc
+    } else {
+      [..acc, name]
+    }
+  })
+}
+
+///|
+fn build_search_body(
+  jql : String,
+  fields : Array[@types.IssueField],
+) -> @core.Any {
+  let requested_fields = requested_api_fields(fields)
+  @core.from_entries(
+    [
+      ("jql", @core.any(jql)),
+      ("maxResults", @core.any(20)),
+      ..if requested_fields.is_empty() {
+        []
+      } else {
+        [("fields", @core.any(requested_fields))]
+      },
+    ],
+  )
+}
+
+///|
+fn build_issue_path(key : String, fields : Array[@types.IssueField]) -> String {
+  let requested_fields = requested_api_fields(fields)
+  if requested_fields.is_empty() {
+    "/rest/api/3/issue/\{key}"
+  } else {
+    let encoded_fields = encode_uri_component(requested_fields.join(","))
+    "/rest/api/3/issue/\{key}?fields=\{encoded_fields}"
+  }
+}
+
+///|
 pub async fn list_issues(
   config : @types.JiraConfig,
   jql : String,
+  fields : Array[@types.IssueField],
 ) -> Array[@types.JiraIssue] {
-  let fields : @core.Any = @core.any([
-    "summary", "status", "assignee", "issuetype", "priority", "description",
-  ])
-  let body = @core.from_entries([
-    ("jql", @core.any(jql)),
-    ("maxResults", @core.any(20)),
-    ("fields", fields),
-  ])
+  let body = build_search_body(jql, fields)
   let data = api_request(config, "POST", "/rest/api/3/search/jql", body~)
   parse_issues(data)
 }
@@ -109,8 +195,9 @@ pub async fn list_issues(
 pub async fn get_issue(
   config : @types.JiraConfig,
   key : String,
+  fields : Array[@types.IssueField],
 ) -> @types.JiraIssue {
-  let data = api_request(config, "GET", "/rest/api/3/issue/\{key}")
+  let data = api_request(config, "GET", build_issue_path(key, fields))
   parse_issue(data)
 }
 

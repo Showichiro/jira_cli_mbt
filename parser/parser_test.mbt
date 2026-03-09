@@ -17,7 +17,7 @@ test "parse_args: empty args shows help" {
 test "parse_args: list issues with default jql" {
   inspect(
     @parser.parse_args(["issues"][:]),
-    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\"))",
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary]))",
   )
 }
 
@@ -25,7 +25,31 @@ test "parse_args: list issues with default jql" {
 test "parse_args: list issues with custom jql" {
   inspect(
     @parser.parse_args(["issues", "--jql", "project = TEST"][:]),
-    content="Ok(ListIssues(jql=\"project = TEST\"))",
+    content="Ok(ListIssues(jql=\"project = TEST\", fields=[Key, IssueType, Status, Priority, Summary]))",
+  )
+}
+
+///|
+test "parse_args: list issues with custom fields" {
+  inspect(
+    @parser.parse_args(["issues", "--fields", "key,assignee,summary"][:]),
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, Assignee, Summary]))",
+  )
+}
+
+///|
+test "parse_args: list issues with custom jira field" {
+  inspect(
+    @parser.parse_args(["issues", "--fields", "key,customfield_12345"][:]),
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, Custom(\"customfield_12345\")]))",
+  )
+}
+
+///|
+test "parse_args: list issues rejects unknown field" {
+  inspect(
+    @parser.parse_args(["issues", "--fields", "key,unknown"][:]),
+    content="Err(\"Unsupported issue field: unknown\")",
   )
 }
 
@@ -33,7 +57,17 @@ test "parse_args: list issues with custom jql" {
 test "parse_args: get issue" {
   inspect(
     @parser.parse_args(["issue", "PROJ-123"][:]),
-    content="Ok(GetIssue(key=\"PROJ-123\"))",
+    content="Ok(GetIssue(key=\"PROJ-123\", fields=[Key, IssueType, Status, Priority, Assignee, Summary, Description]))",
+  )
+}
+
+///|
+test "parse_args: get issue with custom fields" {
+  inspect(
+    @parser.parse_args(
+      ["issue", "PROJ-123", "--fields", "summary, type, summary"][:],
+    ),
+    content="Ok(GetIssue(key=\"PROJ-123\", fields=[Summary, IssueType]))",
   )
 }
 

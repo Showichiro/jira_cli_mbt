@@ -41,39 +41,42 @@ fn format_table(
 }
 
 ///|
-pub fn format_issue_list(issues : Array[@types.JiraIssue]) -> String {
+pub fn format_issue_list(
+  issues : Array[@types.JiraIssue],
+  fields : Array[@types.IssueField],
+) -> String {
   if issues.is_empty() {
     return "No issues found."
   }
-  let headers = ["KEY", "TYPE", "STATUS", "PRIORITY", "SUMMARY"]
-  let widths = [12, 12, 15, 10, 40]
+  let headers = fields.map(fn(field) { field.list_header() })
+  let widths = fields.map(fn(field) { field.table_width() })
   let rows = issues.map(fn(issue) {
-    [
-      issue.key,
-      truncate(issue.issue_type, 12),
-      truncate(issue.status, 15),
-      truncate(issue.priority, 10),
-      truncate(issue.summary, 40),
-    ]
+    fields.map(fn(field) {
+      truncate(issue.field_value(field), field.table_width())
+    })
   })
   format_table(headers, rows, widths)
 }
 
 ///|
-pub fn format_issue_detail(issue : @types.JiraIssue) -> String {
-  [
-    "Key:         \{issue.key}",
-    "Type:        \{issue.issue_type}",
-    "Status:      \{issue.status}",
-    "Priority:    \{issue.priority}",
-    "Assignee:    \{issue.assignee}",
-    "Summary:     \{issue.summary}",
-    ..if issue.description.length() > 0 {
-      ["Description: \{issue.description}"]
-    } else {
-      []
-    },
-  ].join("\n")
+fn format_detail_line(
+  issue : @types.JiraIssue,
+  field : @types.IssueField,
+) -> String? {
+  let value = issue.field_value(field)
+  let label = pad_right(field.detail_label() + ":", 12)
+  match (field, value) {
+    (@types.Description, "") => None
+    _ => Some("\{label} \{value}")
+  }
+}
+
+///|
+pub fn format_issue_detail(
+  issue : @types.JiraIssue,
+  fields : Array[@types.IssueField],
+) -> String {
+  fields.filter_map(fn(field) { format_detail_line(issue, field) }).join("\n")
 }
 
 ///|
@@ -94,9 +97,10 @@ pub fn format_usage() -> String {
   [
     "Jira CLI (MoonBit)", "", "Usage: jira <command> [options]", "", "Commands:",
     "  config      Set Jira configuration", "              --base-url <url> --email <email> --api-token <token>",
-    "  issues      List assigned issues (default JQL)", "              [--jql <jql>]",
-    "  issue       Get issue details", "              <key>", "  create      Create a new issue",
-    "              --project <key> --summary <text> [--type <type>] [--description <text>]",
+    "  issues      List assigned issues (default JQL)", "              [--jql <jql>] [--fields <field,...>]",
+    "  issue       Get issue details", "              <key> [--fields <field,...>]",
+    "              fields: key,summary,status,assignee,type,priority,description,customfield_<id>",
+    "  create      Create a new issue", "              --project <key> --summary <text> [--type <type>] [--description <text>]",
     "  transition  Transition issue status", "              --key <key> --status <status>",
     "  comment     Add comment to issue", "              --key <key> --text <text>",
     "  assign      Assign issue to user", "              --key <key> --email <email>",

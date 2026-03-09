@@ -12,9 +12,9 @@ pub async fn assign_issue(@types.JiraConfig, String, String) -> Unit
 
 pub async fn create_issue(@types.JiraConfig, String, String, String, String) -> String
 
-pub async fn get_issue(@types.JiraConfig, String) -> @types.JiraIssue
+pub async fn get_issue(@types.JiraConfig, String, Array[@types.IssueField]) -> @types.JiraIssue
 
-pub async fn list_issues(@types.JiraConfig, String) -> Array[@types.JiraIssue]
+pub async fn list_issues(@types.JiraConfig, String, Array[@types.IssueField]) -> Array[@types.JiraIssue]
 
 pub async fn list_projects(@types.JiraConfig) -> Array[@types.JiraProject]
 

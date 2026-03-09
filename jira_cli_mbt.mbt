@@ -12,13 +12,19 @@ pub async fn execute(cmd : Result[@types.Command, String]) -> String {
       @config.save_config({ base_url, email, api_token })
       "Configuration saved to ~/.config/jira_cli_mbt/config.json"
     }
-    Ok(@types.ListIssues(jql~)) => {
+    Ok(@types.ListIssues(jql~, fields~)) => {
       let config = @config.load_config()
-      @formatter.format_issue_list(@api.list_issues(config, jql))
+      @formatter.format_issue_list(
+        @api.list_issues(config, jql, fields),
+        fields,
+      )
     }
-    Ok(@types.GetIssue(key~)) => {
+    Ok(@types.GetIssue(key~, fields~)) => {
       let config = @config.load_config()
-      @formatter.format_issue_detail(@api.get_issue(config, key))
+      @formatter.format_issue_detail(
+        @api.get_issue(config, key, fields),
+        fields,
+      )
     }
     Ok(@types.CreateIssue(project~, summary~, issue_type~, description~)) => {
       let config = @config.load_config()
@@ -44,7 +50,11 @@ pub async fn execute(cmd : Result[@types.Command, String]) -> String {
     }
     Ok(@types.Search(jql~)) => {
       let config = @config.load_config()
-      @formatter.format_issue_list(@api.list_issues(config, jql))
+      let fields = @types.default_list_issue_fields()
+      @formatter.format_issue_list(
+        @api.list_issues(config, jql, fields),
+        fields,
+      )
     }
     Ok(@types.ListProjects) => {
       let config = @config.load_config()

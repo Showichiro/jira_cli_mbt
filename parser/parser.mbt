@@ -7,7 +7,7 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
     ["help" | "--help" | "-h", ..] => Ok(@types.Help)
     ["config", .. rest] => parse_config(rest)
     ["issues", .. rest] => parse_issues_cmd(rest)
-    ["issue", key, ..] => Ok(@types.GetIssue(key~))
+    ["issue", key, .. rest] => parse_issue_cmd(key, rest)
     ["issue", ..] => Err("Usage: issue <key>")
     ["create", .. rest] => parse_create(rest)
     ["transition", .. rest] => parse_transition(rest)
@@ -45,7 +45,13 @@ let config_flags : Map[String, String] = {
 }
 
 ///|
-let issues_flags : Map[String, String] = { "--jql": "jql" }
+let issues_flags : Map[String, String] = {
+  "--jql": "jql",
+  "--fields": "fields",
+}
+
+///|
+let issue_flags : Map[String, String] = { "--fields": "fields" }
 
 ///|
 let create_flags : Map[String, String] = {
@@ -108,12 +114,72 @@ fn parse_config(args : ArrayView[String]) -> Result[@types.Command, String] {
 }
 
 ///|
+fn parse_issue_fields(
+  value : String,
+) -> Result[Array[@types.IssueField], String] {
+  let names = value
+    .split(",")
+    .map(fn(name) { name.trim().to_string() })
+    .filter(fn(name) { name.length() > 0 })
+    .to_array()
+  guard not(names.is_empty()) else {
+    return Err("Field list must not be empty")
+  }
+  names.fold(init=Ok([]), fn(acc, name) {
+    match (acc, @types.parse_issue_field(name)) {
+      (Err(message), _) => Err(message)
+      (_, Err(message)) => Err(message)
+      (Ok(fields), Ok(field)) =>
+        Ok(if fields.contains(field) { fields } else { [..fields, field] })
+    }
+  })
+}
+
+///|
+fn resolve_issue_fields(
+  value : String?,
+  default_fields : Array[@types.IssueField],
+) -> Result[Array[@types.IssueField], String] {
+  match value {
+    Some(fields) => parse_issue_fields(fields)
+    None => Ok(default_fields)
+  }
+}
+
+///|
 fn parse_issues_cmd(args : ArrayView[String]) -> Result[@types.Command, String] {
   match parse_flags(args, issues_flags, {}) {
-    Ok(flags) => {
-      let jql = flags.get("jql").unwrap_or(default_jql)
-      Ok(@types.ListIssues(jql~))
-    }
+    Ok(flags) =>
+      match
+        resolve_issue_fields(
+          flags.get("fields"),
+          @types.default_list_issue_fields(),
+        ) {
+        Ok(fields) => {
+          let jql = flags.get("jql").unwrap_or(default_jql)
+          Ok(@types.ListIssues(jql~, fields~))
+        }
+        Err(message) => Err(message)
+      }
+    Err(message) => Err(message)
+  }
+}
+
+///|
+fn parse_issue_cmd(
+  key : String,
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match parse_flags(args, issue_flags, {}) {
+    Ok(flags) =>
+      match
+        resolve_issue_fields(
+          flags.get("fields"),
+          @types.default_detail_issue_fields(),
+        ) {
+        Ok(fields) => Ok(@types.GetIssue(key~, fields~))
+        Err(message) => Err(message)
+      }
     Err(message) => Err(message)
   }
 }

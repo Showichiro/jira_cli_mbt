@@ -35,7 +35,10 @@ test "truncate: unicode safe" {
 
 ///|
 test "format_issue_list: empty" {
-  inspect(format_issue_list([]), content="No issues found.")
+  inspect(
+    format_issue_list([], @types.default_list_issue_fields()),
+    content="No issues found.",
+  )
 }
 
 ///|
@@ -49,10 +52,11 @@ test "format_issue_list: single issue" {
       issue_type: "Bug",
       priority: "High",
       description: "",
+      custom_fields: {},
     },
   ]
   inspect(
-    format_issue_list(issues),
+    format_issue_list(issues, @types.default_list_issue_fields()),
     content=(
       #|KEY           TYPE          STATUS           PRIORITY    SUMMARY                                 
       #|------------  ------------  ---------------  ----------  ----------------------------------------
@@ -71,9 +75,10 @@ test "format_issue_detail" {
     issue_type: "Bug",
     priority: "High",
     description: "Some description",
+    custom_fields: {},
   }
   inspect(
-    format_issue_detail(issue),
+    format_issue_detail(issue, @types.default_detail_issue_fields()),
     content=(
       #|Key:         PROJ-1
       #|Type:        Bug
@@ -82,6 +87,51 @@ test "format_issue_detail" {
       #|Assignee:    Alice
       #|Summary:     Fix bug
       #|Description: Some description
+    ),
+  )
+}
+
+///|
+test "format_issue_list: custom fields" {
+  let issues : Array[@types.JiraIssue] = [
+    {
+      key: "PROJ-1",
+      summary: "Fix bug",
+      status: "Open",
+      assignee: "Alice",
+      issue_type: "Bug",
+      priority: "High",
+      description: "",
+      custom_fields: {},
+    },
+  ]
+  inspect(
+    format_issue_list(issues, [@types.Key, @types.Assignee, @types.Summary]),
+    content=(
+      #|KEY           ASSIGNEE              SUMMARY                                 
+      #|------------  --------------------  ----------------------------------------
+      #|PROJ-1        Alice                 Fix bug                                 
+    ),
+  )
+}
+
+///|
+test "format_issue_detail: custom field" {
+  let issue : @types.JiraIssue = {
+    key: "PROJ-1",
+    summary: "Fix bug",
+    status: "Open",
+    assignee: "Alice",
+    issue_type: "Bug",
+    priority: "High",
+    description: "",
+    custom_fields: { "customfield_10001": "Platform Team" },
+  }
+  inspect(
+    format_issue_detail(issue, [@types.Key, @types.Custom("customfield_10001")]),
+    content=(
+      #|Key:         PROJ-1
+      #|customfield_10001: Platform Team
     ),
   )
 }
