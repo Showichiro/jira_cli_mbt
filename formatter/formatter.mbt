@@ -9,12 +9,15 @@ fn pad_right(s : String, width : Int) -> String {
 
 ///|
 fn truncate(s : String, max_len : Int) -> String {
-  if s.length() <= max_len {
+  let chars = s.to_array()
+  if chars.length() <= max_len {
     s
+  } else if max_len <= 3 {
+    ".".repeat(max_len)
   } else {
     let buf = StringBuilder::new()
     for i in 0..<(max_len - 3) {
-      buf.write_char(s[i].to_int().unsafe_to_char())
+      buf.write_char(chars[i])
     }
     buf.write_string("...")
     buf.to_string()

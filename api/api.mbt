@@ -56,7 +56,7 @@ fn parse_issue(data : @core.Any) -> @types.JiraIssue {
   let description = if @core.is_nullish(description_obj) {
     ""
   } else {
-    @core.json_stringify(description_obj)
+    extract_adf_text(description_obj)
   }
   {
     key: get_string(data, "key"),
@@ -200,16 +200,42 @@ async fn search_users(config : @types.JiraConfig, email : String) -> @core.Any {
 }
 
 ///|
+fn select_user_account_id(
+  users : Array[@core.Any],
+  query : String,
+) -> Result[String, String] {
+  let lower_query = query.to_lower()
+  let exact_matches : Array[String] = []
+  for user in users {
+    let account_id = get_string(user, "accountId")
+    let email = get_string(user, "emailAddress").to_lower()
+    if account_id.to_lower() == lower_query || email == lower_query {
+      exact_matches.push(account_id)
+    }
+  }
+  match exact_matches {
+    [account_id] => Ok(account_id)
+    [_, _, ..] => Err("Multiple users matched: \{query}")
+    [] =>
+      match users {
+        [] => Err("User not found: \{query}")
+        [user] => Ok(get_string(user, "accountId"))
+        [_, _, ..] => Err("Multiple users matched: \{query}")
+      }
+  }
+}
+
+///|
 pub async fn assign_issue(
   config : @types.JiraConfig,
   key : String,
   email : String,
 ) -> Unit {
   let users = @core.array_from(search_users(config, email))
-  guard users.length() > 0 else {
-    raise JiraApiError("User not found: \{email}")
+  let account_id = match select_user_account_id(users, email) {
+    Ok(account_id) => account_id
+    Err(message) => raise JiraApiError(message)
   }
-  let account_id = get_string(users[0], "accountId")
   let body = @core.from_entries([("accountId", @core.any(account_id))])
   let _ = api_request(config, "PUT", "/rest/api/3/issue/\{key}/assignee", body~)
 }

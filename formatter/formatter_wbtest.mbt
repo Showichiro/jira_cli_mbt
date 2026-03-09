@@ -29,6 +29,11 @@ test "truncate: longer than max" {
 }
 
 ///|
+test "truncate: unicode safe" {
+  inspect(truncate("こんにちは世界", 6), content="こんに...")
+}
+
+///|
 test "format_issue_list: empty" {
   inspect(format_issue_list([]), content="No issues found.")
 }

@@ -35,6 +35,7 @@ test "get_string with default" {
 
 ///|
 test "parse_issue with all fields" {
+  let description = build_adf_text("Test description")
   let data = @core.from_entries([
     ("key", @core.any("TEST-1")),
     (
@@ -45,7 +46,7 @@ test "parse_issue with all fields" {
         ("assignee", @core.from_entries([("displayName", @core.any("Alice"))])),
         ("issuetype", @core.from_entries([("name", @core.any("Bug"))])),
         ("priority", @core.from_entries([("name", @core.any("High"))])),
-        ("description", @core.any("desc")),
+        ("description", description),
       ]),
     ),
   ])
@@ -56,6 +57,7 @@ test "parse_issue with all fields" {
   assert_eq(issue.assignee, "Alice")
   assert_eq(issue.issue_type, "Bug")
   assert_eq(issue.priority, "High")
+  assert_eq(issue.description, "Test description")
 }
 
 ///|
@@ -125,6 +127,36 @@ test "parse_project" {
   assert_eq(project.key, "PROJ")
   assert_eq(project.name, "My Project")
   assert_eq(project.project_type, "software")
+}
+
+///|
+test "select_user_account_id prefers exact match" {
+  let users : Array[@core.Any] = [
+    @core.from_entries([
+      ("accountId", @core.any("acc-1")),
+      ("emailAddress", @core.any("other@example.com")),
+    ]),
+    @core.from_entries([
+      ("accountId", @core.any("acc-2")),
+      ("emailAddress", @core.any("user@example.com")),
+    ]),
+  ]
+  inspect(
+    select_user_account_id(users, "user@example.com"),
+    content="Ok(\"acc-2\")",
+  )
+}
+
+///|
+test "select_user_account_id rejects ambiguous results" {
+  let users : Array[@core.Any] = [
+    @core.from_entries([("accountId", @core.any("acc-1"))]),
+    @core.from_entries([("accountId", @core.any("acc-2"))]),
+  ]
+  inspect(
+    select_user_account_id(users, "user@example.com"),
+    content="Err(\"Multiple users matched: user@example.com\")",
+  )
 }
 
 ///|
