@@ -10,7 +10,7 @@ pub async fn add_comment(@types.JiraConfig, String, String) -> Unit
 
 pub async fn assign_issue(@types.JiraConfig, String, String) -> Unit
 
-pub async fn create_issue(@types.JiraConfig, String, String, String, String) -> String
+pub async fn create_issue(@types.JiraConfig, String, String, String, String, Map[String, String]) -> String
 
 pub async fn get_issue(@types.JiraConfig, String, Array[@types.IssueField]) -> @types.JiraIssue
 

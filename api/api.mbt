@@ -208,7 +208,12 @@ pub async fn create_issue(
   summary : String,
   issue_type : String,
   description : String,
+  custom_fields : Map[String, String],
 ) -> String {
+  let custom_entries : Array[(String, @core.Any)] = custom_fields
+    .iter()
+    .map(fn(entry) { (entry.0, @core.any(entry.1)) })
+    .to_array()
   let body = @core.from_entries([
     (
       "fields",
@@ -222,6 +227,7 @@ pub async fn create_issue(
           } else {
             []
           },
+          ..custom_entries,
         ],
       ),
     ),

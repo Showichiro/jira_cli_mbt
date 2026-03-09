@@ -26,10 +26,18 @@ pub async fn execute(cmd : Result[@types.Command, String]) -> String {
         fields,
       )
     }
-    Ok(@types.CreateIssue(project~, summary~, issue_type~, description~)) => {
+    Ok(
+      @types.CreateIssue(
+        project~,
+        summary~,
+        issue_type~,
+        description~,
+        custom_fields~
+      )
+    ) => {
       let config = @config.load_config()
       let key = @api.create_issue(
-        config, project, summary, issue_type, description,
+        config, project, summary, issue_type, description, custom_fields,
       )
       "Issue created: \{key}"
     }

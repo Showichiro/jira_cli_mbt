@@ -142,7 +142,8 @@ pub(all) enum Command {
     project~ : String,
     summary~ : String,
     issue_type~ : String,
-    description~ : String
+    description~ : String,
+    custom_fields~ : Map[String, String]
   )
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
