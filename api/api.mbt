@@ -63,7 +63,10 @@ async fn api_request(
   }
   guard response.ok else {
     let error_detail = parse_error_response(response.clone().json()) catch {
-      _ => truncate_string(response.text(), 200) catch { _ => "" }
+      _ =>
+        truncate_string(response.text(), 200) catch {
+          _ => "(response body could not be read)"
+        }
     }
     let msg = "API request failed: \{response.status} \{response.statusText}"
     raise JiraApiError(
