@@ -192,6 +192,30 @@ test "parse_args: create --set duplicate key last wins" {
 }
 
 ///|
+test "parse_args: create --set empty value errors" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_12345=",
+      ][:],
+    ),
+    content="Err(\"Empty value for --set field 'customfield_12345'. Expected 'customfield_<id>=<value>'\")",
+  )
+}
+
+///|
+test "parse_args: create --set customfield_ without id errors" {
+  inspect(
+    @parser.parse_args(
+      [
+        "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_=High",
+      ][:],
+    ),
+    content="Err(\"Only customfield_* fields are allowed with --set, got: 'customfield_'\")",
+  )
+}
+
+///|
 test "parse_args: transition" {
   inspect(
     @parser.parse_args(["transition", "--key", "PROJ-1", "--status", "Done"][:]),

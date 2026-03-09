@@ -211,9 +211,14 @@ fn parse_one_set_entry(value : String) -> Result[(String, String), String] {
     val_buf.write_char(value[i].to_int().unsafe_to_char())
   }
   let val = val_buf.to_string()
-  guard key.has_prefix("customfield_") else {
+  guard key.has_prefix("customfield_") && key.length() > "customfield_".length() else {
     return Err(
       "Only customfield_* fields are allowed with --set, got: '\{key}'",
+    )
+  }
+  guard val.length() > 0 else {
+    return Err(
+      "Empty value for --set field '\{key}'. Expected 'customfield_<id>=<value>'",
     )
   }
   Ok((key, val))
