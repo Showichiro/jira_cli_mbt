@@ -55,8 +55,15 @@ pub async fn execute(cmd : Result[@types.Command, String]) -> String {
     ) => {
       let config = @config.load_config()
       @api.update_issue(
-        config, key, summary, description, priority, issue_type, labels, assignee,
-        custom_fields,
+        config,
+        key~,
+        summary~,
+        description~,
+        priority~,
+        issue_type~,
+        labels~,
+        assignee~,
+        custom_fields~,
       )
       "Issue \{key} updated"
     }

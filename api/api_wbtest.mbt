@@ -276,6 +276,36 @@ test "truncate_string exceeds limit" {
 }
 
 ///|
+test "is_numeric: digits return true" {
+  assert_true(is_numeric("123"))
+  assert_true(is_numeric("0"))
+  assert_true(is_numeric("9999"))
+}
+
+///|
+test "is_numeric: non-digits return false" {
+  assert_false(is_numeric(""))
+  assert_false(is_numeric("abc"))
+  assert_false(is_numeric("12a3"))
+  assert_false(is_numeric("-1"))
+  assert_false(is_numeric("3.14"))
+  assert_false(is_numeric(" 123"))
+}
+
+///|
+test "custom_field_value: numeric wraps as id object" {
+  let result = @core.json_stringify(custom_field_value("123"))
+  assert_true(result.contains("\"id\""))
+  assert_true(result.contains("\"123\""))
+}
+
+///|
+test "custom_field_value: non-numeric passes as string" {
+  let result = custom_field_value("hello")
+  assert_eq(result.to_string(), "hello")
+}
+
+///|
 test "build_adf_text with empty string" {
   let adf = build_adf_text("")
   let json_str = @core.json_stringify_pretty(adf, 2)
