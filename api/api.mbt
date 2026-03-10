@@ -545,18 +545,36 @@ pub async fn get_field_detail(
         )
       }
     }
-    let fields_data = api_request(
-      config,
-      "GET",
-      "/rest/api/3/issue/createmeta/\{project}/issuetypes/\{type_id}",
-    )
-    let createmeta_fields_raw = fields_data._get("fields")
-    guard not(@core.is_nullish(createmeta_fields_raw)) else {
-      raise JiraApiError(
-        "Unexpected API response: 'fields' not found for project '\{project}' issue type '\{issue_type}'",
+    let createmeta_fields : Array[@core.Any] = []
+    let mut start_at = 0
+    let page_size = 50
+    while true {
+      let fields_data = api_request(
+        config,
+        "GET",
+        "/rest/api/3/issue/createmeta/\{project}/issuetypes/\{type_id}?startAt=\{start_at}&maxResults=\{page_size}",
       )
+      let createmeta_fields_raw = fields_data._get("fields")
+      guard not(@core.is_nullish(createmeta_fields_raw)) else {
+        raise JiraApiError(
+          "Unexpected API response: 'fields' not found for project '\{project}' issue type '\{issue_type}'",
+        )
+      }
+      let page_fields = @core.array_from(createmeta_fields_raw)
+      for f in page_fields {
+        createmeta_fields.push(f)
+      }
+      let total_raw = fields_data._get("total")
+      let total = if @core.is_nullish(total_raw) {
+        0
+      } else {
+        total_raw.cast()
+      }
+      start_at = start_at + page_fields.length()
+      if page_fields.length() < page_size || start_at >= total {
+        break
+      }
     }
-    let createmeta_fields = @core.array_from(createmeta_fields_raw)
     let target_field = createmeta_fields
       .iter()
       .find_first(fn(cf) { get_string(cf, "fieldId") == field_id })
