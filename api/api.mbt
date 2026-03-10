@@ -584,12 +584,7 @@ pub async fn get_field_detail(
         if not(@core.is_nullish(allowed)) {
           let allowed_arr = @core.array_from(allowed)
           for opt in allowed_arr {
-            let value = get_string(opt, "value")
-            let display = if value.length() > 0 {
-              value
-            } else {
-              get_string(opt, "name")
-            }
+            let display = any_to_display_string(opt)
             options.push({ id: get_string(opt, "id"), value: display })
           }
         }
