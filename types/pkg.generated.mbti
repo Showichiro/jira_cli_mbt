@@ -26,6 +26,8 @@ pub(all) enum Command {
   Assign(key~ : String, email~ : String)
   Search(jql~ : String)
   ListProjects
+  ListFields
+  GetField(field_id~ : String, project~ : String, issue_type~ : String)
   Help
 }
 pub impl Show for Command
@@ -55,6 +57,27 @@ pub(all) struct JiraConfig {
 pub impl Show for JiraConfig
 pub impl ToJson for JiraConfig
 pub impl @json.FromJson for JiraConfig
+
+pub(all) struct JiraField {
+  id : String
+  name : String
+  custom : Bool
+  schema_type : String
+  schema_custom : String
+}
+pub impl Show for JiraField
+
+pub(all) struct JiraFieldDetail {
+  field : JiraField
+  options : Array[JiraFieldOption]
+}
+pub impl Show for JiraFieldDetail
+
+pub(all) struct JiraFieldOption {
+  id : String
+  value : String
+}
+pub impl Show for JiraFieldOption
 
 pub(all) struct JiraIssue {
   key : String

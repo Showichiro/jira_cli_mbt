@@ -16,6 +16,8 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
     ["assign", .. rest] => parse_assign(rest)
     ["search", .. rest] => parse_search(rest)
     ["projects"] => Ok(@types.ListProjects)
+    ["fields", field_id, .. rest] => parse_get_field(field_id, rest)
+    ["fields"] => Ok(@types.ListFields)
     [] => Ok(@types.Help)
     [cmd, ..] => Err("Unknown command: \{cmd}")
   }
@@ -348,6 +350,30 @@ let update_flags : Map[String, String] = {
 
 ///|
 let update_usage : String = "Usage: update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]..."
+
+///|
+let get_field_flags : Map[String, String] = {
+  "--project": "project",
+  "--type": "issue_type",
+}
+
+///|
+fn parse_get_field(
+  field_id : String,
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match parse_flags(args, get_field_flags, {}) {
+    Ok(flags) => {
+      let project = flags.get("project").unwrap_or("")
+      let issue_type = flags.get("issue_type").unwrap_or("")
+      if issue_type.length() > 0 && project.length() == 0 {
+        return Err("--type requires --project to be specified")
+      }
+      Ok(@types.GetField(field_id~, project~, issue_type~))
+    }
+    Err(msg) => Err(msg)
+  }
+}
 
 ///|
 fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {

@@ -93,6 +93,40 @@ pub fn format_projects(projects : Array[@types.JiraProject]) -> String {
 }
 
 ///|
+pub fn format_fields(fields : Array[@types.JiraField]) -> String {
+  if fields.is_empty() {
+    return "No custom fields found."
+  }
+  let headers = ["ID", "NAME", "TYPE", "CUSTOM TYPE"]
+  let widths = [25, 30, 15, 40]
+  let rows = fields.map(fn(f) {
+    [f.id, truncate(f.name, 30), f.schema_type, truncate(f.schema_custom, 40)]
+  })
+  format_table(headers, rows, widths)
+}
+
+///|
+pub fn format_field_detail(detail : @types.JiraFieldDetail) -> String {
+  let f = detail.field
+  let lines = [
+    "ID:          " + f.id,
+    "Name:        " + f.name,
+    "Type:        " + f.schema_type,
+    "Custom Type: " + f.schema_custom,
+  ]
+  if detail.options.is_empty() {
+    lines.join("\n") + "\n\nNo options available for this field."
+  } else {
+    let opt_headers = ["ID", "VALUE"]
+    let opt_widths = [10, 30]
+    let opt_rows = detail.options.map(fn(o) { [o.id, truncate(o.value, 30)] })
+    lines.join("\n") +
+    "\n\nOptions:\n" +
+    format_table(opt_headers, opt_rows, opt_widths)
+  }
+}
+
+///|
 pub fn format_usage() -> String {
   [
     "Jira CLI (MoonBit)", "", "Usage: jira <command> [options]", "", "Commands:",
@@ -105,7 +139,8 @@ pub fn format_usage() -> String {
     "  transition  Transition issue status", "              --key <key> --status <status>",
     "  comment     Add comment to issue", "              --key <key> --text <text>",
     "  assign      Assign issue to user", "              --key <key> --email <email>",
-    "  search      Search issues with JQL", "              --jql <jql>", "  projects    List all projects",
+    "  search      Search issues with JQL", "              --jql <jql>", "  fields      List custom fields",
+    "              [customfield_XXXXX]  Show field details and options", "  projects    List all projects",
     "  help        Show this help message",
   ].join("\n")
 }

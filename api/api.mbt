@@ -452,6 +452,150 @@ pub async fn list_projects(
 }
 
 ///|
+fn parse_field(f : @core.Any) -> @types.JiraField {
+  let schema = f._get("schema")
+  {
+    id: get_string(f, "id"),
+    name: get_string(f, "name"),
+    custom: f._get("custom").to_string() == "true",
+    schema_type: if @core.is_nullish(schema) {
+      ""
+    } else {
+      get_string(schema, "type")
+    },
+    schema_custom: if @core.is_nullish(schema) {
+      ""
+    } else {
+      get_string(schema, "custom")
+    },
+  }
+}
+
+///|
+pub async fn list_fields(config : @types.JiraConfig) -> Array[@types.JiraField] {
+  let data = api_request(config, "GET", "/rest/api/3/field")
+  let fields = @core.array_from(data)
+  fields
+  .filter(fn(f) { f._get("custom").to_string() == "true" })
+  .map(parse_field)
+}
+
+///|
+pub async fn list_issue_types(
+  config : @types.JiraConfig,
+  project : String,
+) -> Array[(String, String)] {
+  let data = api_request(
+    config,
+    "GET",
+    "/rest/api/3/issue/createmeta/\{project}/issuetypes",
+  )
+  let raw = data._get("issueTypes")
+  guard not(@core.is_nullish(raw)) else {
+    raise JiraApiError(
+      "Unexpected API response: 'issueTypes' not found for project '\{project}'",
+    )
+  }
+  let issue_types = @core.array_from(raw)
+  issue_types.map(fn(it) { (get_string(it, "id"), get_string(it, "name")) })
+}
+
+///|
+pub async fn get_field_detail(
+  config : @types.JiraConfig,
+  field_id : String,
+  project : String,
+  issue_type : String,
+) -> @types.JiraFieldDetail {
+  let data = api_request(config, "GET", "/rest/api/3/field")
+  let fields = @core.array_from(data)
+  let field_data = fields
+    .iter()
+    .find_first(fn(f) { get_string(f, "id") == field_id })
+  let f = match field_data {
+    Some(f) => f
+    None => raise JiraApiError("Field not found: " + field_id)
+  }
+  let field = parse_field(f)
+  let options : Array[@types.JiraFieldOption] = []
+  if project.length() > 0 && issue_type.length() > 0 {
+    let types_data = api_request(
+      config,
+      "GET",
+      "/rest/api/3/issue/createmeta/\{project}/issuetypes",
+    )
+    let issue_types_raw = types_data._get("issueTypes")
+    guard not(@core.is_nullish(issue_types_raw)) else {
+      raise JiraApiError(
+        "Unexpected API response: 'issueTypes' not found for project '\{project}'",
+      )
+    }
+    let issue_types = @core.array_from(issue_types_raw)
+    let type_entry = issue_types
+      .iter()
+      .find_first(fn(it) { get_string(it, "name") == issue_type })
+    let type_id = match type_entry {
+      Some(it) => get_string(it, "id")
+      None => {
+        let available = issue_types
+          .map(fn(it) { get_string(it, "name") })
+          .join(", ")
+        raise JiraApiError(
+          "Issue type '\{issue_type}' not found. Available types: \{available}",
+        )
+      }
+    }
+    let createmeta_fields : Array[@core.Any] = []
+    let mut start_at = 0
+    let page_size = 50
+    while true {
+      let fields_data = api_request(
+        config,
+        "GET",
+        "/rest/api/3/issue/createmeta/\{project}/issuetypes/\{type_id}?startAt=\{start_at}&maxResults=\{page_size}",
+      )
+      let createmeta_fields_raw = fields_data._get("fields")
+      guard not(@core.is_nullish(createmeta_fields_raw)) else {
+        raise JiraApiError(
+          "Unexpected API response: 'fields' not found for project '\{project}' issue type '\{issue_type}'",
+        )
+      }
+      let page_fields = @core.array_from(createmeta_fields_raw)
+      for f in page_fields {
+        createmeta_fields.push(f)
+      }
+      let total_raw = fields_data._get("total")
+      let total = if @core.is_nullish(total_raw) {
+        0
+      } else {
+        total_raw.cast()
+      }
+      start_at = start_at + page_fields.length()
+      if page_fields.length() < page_size || start_at >= total {
+        break
+      }
+    }
+    let target_field = createmeta_fields
+      .iter()
+      .find_first(fn(cf) { get_string(cf, "fieldId") == field_id })
+    match target_field {
+      Some(cf) => {
+        let allowed = cf._get("allowedValues")
+        if not(@core.is_nullish(allowed)) {
+          let allowed_arr = @core.array_from(allowed)
+          for opt in allowed_arr {
+            let display = any_to_display_string(opt)
+            options.push({ id: get_string(opt, "id"), value: display })
+          }
+        }
+      }
+      None => ()
+    }
+  }
+  { field, options }
+}
+
+///|
 fn custom_field_value(value : String) -> @core.Any {
   if is_numeric(value) {
     @core.from_entries([("id", @core.any(value))])
