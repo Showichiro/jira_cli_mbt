@@ -3,7 +3,7 @@ fn main {
   @core.run_async(async fn() noraise {
     try {
       let args = @process.argv()[2:]
-      let output = @jira_cli_mbt.execute(@jira_cli_mbt.parse_args(args[:]))
+      let output = args[:] |> @jira_cli_mbt.parse_args |> @jira_cli_mbt.execute
       println(output)
     } catch {
       @api.JiraApiError(msg) => {
