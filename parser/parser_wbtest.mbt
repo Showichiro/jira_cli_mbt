@@ -54,6 +54,37 @@ test "parse_issue_fields: accepts custom jira fields" {
 }
 
 ///|
+test "parse_args: fields list" {
+  inspect(parse_args(["fields"][:]), content="Ok(ListFields)")
+}
+
+///|
+test "parse_args: fields with field_id" {
+  inspect(
+    parse_args(["fields", "customfield_10001"][:]),
+    content="Ok(GetField(field_id=\"customfield_10001\", project=\"\", issue_type=\"\"))",
+  )
+}
+
+///|
+test "parse_args: fields with --project and --type" {
+  inspect(
+    parse_args(
+      ["fields", "customfield_10001", "--project", "AJ", "--type", "タスク"][:],
+    ),
+    content="Ok(GetField(field_id=\"customfield_10001\", project=\"AJ\", issue_type=\"タスク\"))",
+  )
+}
+
+///|
+test "parse_args: fields with --project only" {
+  inspect(
+    parse_args(["fields", "customfield_10001", "--project", "AJ"][:]),
+    content="Ok(GetField(field_id=\"customfield_10001\", project=\"AJ\", issue_type=\"\"))",
+  )
+}
+
+///|
 test "parse_issue_fields: empty list" {
   inspect(
     parse_issue_fields(" , "),

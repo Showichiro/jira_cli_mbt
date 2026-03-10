@@ -137,6 +137,86 @@ test "format_issue_detail: custom field" {
 }
 
 ///|
+test "format_fields: empty" {
+  inspect(format_fields([]), content="No custom fields found.")
+}
+
+///|
+test "format_fields: single field" {
+  let fields : Array[@types.JiraField] = [
+    {
+      id: "customfield_10001",
+      name: "Team",
+      custom: true,
+      schema_type: "option",
+      schema_custom: "com.atlassian.jira.plugin.system.customfieldtypes:select",
+    },
+  ]
+  inspect(
+    format_fields(fields),
+    content=(
+      #|ID                         NAME                            TYPE             CUSTOM TYPE                             
+      #|-------------------------  ------------------------------  ---------------  ----------------------------------------
+      #|customfield_10001          Team                            option           com.atlassian.jira.plugin.system.cust...
+    ),
+  )
+}
+
+///|
+test "format_field_detail: no options" {
+  let detail : @types.JiraFieldDetail = {
+    field: {
+      id: "customfield_10001",
+      name: "Team",
+      custom: true,
+      schema_type: "string",
+      schema_custom: "",
+    },
+    options: [],
+  }
+  inspect(
+    format_field_detail(detail),
+    content=(
+      #|ID:          customfield_10001
+      #|Name:        Team
+      #|Type:        string
+      #|Custom Type: 
+      #|
+      #|No options available for this field.
+    ),
+  )
+}
+
+///|
+test "format_field_detail: with options" {
+  let detail : @types.JiraFieldDetail = {
+    field: {
+      id: "customfield_10001",
+      name: "Team",
+      custom: true,
+      schema_type: "option",
+      schema_custom: "com.atlassian.jira.plugin.system.customfieldtypes:select",
+    },
+    options: [{ id: "1", value: "Frontend" }, { id: "2", value: "Backend" }],
+  }
+  inspect(
+    format_field_detail(detail),
+    content=(
+      #|ID:          customfield_10001
+      #|Name:        Team
+      #|Type:        option
+      #|Custom Type: com.atlassian.jira.plugin.system.customfieldtypes:select
+      #|
+      #|Options:
+      #|ID          VALUE                         
+      #|----------  ------------------------------
+      #|1           Frontend                      
+      #|2           Backend                       
+    ),
+  )
+}
+
+///|
 test "format_projects: empty" {
   inspect(format_projects([]), content="No projects found.")
 }

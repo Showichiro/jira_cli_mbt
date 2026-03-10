@@ -94,5 +94,22 @@ pub async fn execute(cmd : Result[@types.Command, String]) -> String {
       let config = @config.load_config()
       @formatter.format_projects(@api.list_projects(config))
     }
+    Ok(@types.ListFields) => {
+      let config = @config.load_config()
+      @formatter.format_fields(@api.list_fields(config))
+    }
+    Ok(@types.GetField(field_id~, project~, issue_type~)) => {
+      let config = @config.load_config()
+      if project.length() > 0 && issue_type.length() == 0 {
+        let types = @api.list_issue_types(config, project)
+        let type_list = types.map(fn(t) { "  - " + t.1 }).join("\n")
+        "Please specify --type. Available issue types for \{project}:\n" +
+        type_list
+      } else {
+        @formatter.format_field_detail(
+          @api.get_field_detail(config, field_id, project, issue_type),
+        )
+      }
+    }
   }
 }

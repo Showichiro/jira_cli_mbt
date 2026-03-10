@@ -160,5 +160,28 @@ pub(all) enum Command {
   Assign(key~ : String, email~ : String)
   Search(jql~ : String)
   ListProjects
+  ListFields
+  GetField(field_id~ : String, project~ : String, issue_type~ : String)
   Help
+} derive(Show)
+
+///|
+pub(all) struct JiraField {
+  id : String
+  name : String
+  custom : Bool
+  schema_type : String
+  schema_custom : String
+} derive(Show)
+
+///|
+pub(all) struct JiraFieldOption {
+  id : String
+  value : String
+} derive(Show)
+
+///|
+pub(all) struct JiraFieldDetail {
+  field : JiraField
+  options : Array[JiraFieldOption]
 } derive(Show)

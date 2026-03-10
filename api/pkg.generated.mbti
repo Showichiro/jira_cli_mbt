@@ -12,7 +12,13 @@ pub async fn assign_issue(@types.JiraConfig, String, String) -> Unit
 
 pub async fn create_issue(@types.JiraConfig, String, String, String, String, Map[String, String]) -> String
 
+pub async fn get_field_detail(@types.JiraConfig, String, String, String) -> @types.JiraFieldDetail
+
 pub async fn get_issue(@types.JiraConfig, String, Array[@types.IssueField]) -> @types.JiraIssue
+
+pub async fn list_fields(@types.JiraConfig) -> Array[@types.JiraField]
+
+pub async fn list_issue_types(@types.JiraConfig, String) -> Array[(String, String)]
 
 pub async fn list_issues(@types.JiraConfig, String, Array[@types.IssueField]) -> Array[@types.JiraIssue]
 
