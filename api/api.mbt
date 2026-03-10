@@ -490,7 +490,13 @@ pub async fn list_issue_types(
     "GET",
     "/rest/api/3/issue/createmeta/\{project}/issuetypes",
   )
-  let issue_types = @core.array_from(data._get("issueTypes"))
+  let raw = data._get("issueTypes")
+  guard not(@core.is_nullish(raw)) else {
+    raise JiraApiError(
+      "Unexpected API response: 'issueTypes' not found for project '\{project}'",
+    )
+  }
+  let issue_types = @core.array_from(raw)
   issue_types.map(fn(it) { (get_string(it, "id"), get_string(it, "name")) })
 }
 
@@ -518,7 +524,13 @@ pub async fn get_field_detail(
       "GET",
       "/rest/api/3/issue/createmeta/\{project}/issuetypes",
     )
-    let issue_types = @core.array_from(types_data._get("issueTypes"))
+    let issue_types_raw = types_data._get("issueTypes")
+    guard not(@core.is_nullish(issue_types_raw)) else {
+      raise JiraApiError(
+        "Unexpected API response: 'issueTypes' not found for project '\{project}'",
+      )
+    }
+    let issue_types = @core.array_from(issue_types_raw)
     let type_entry = issue_types
       .iter()
       .find_first(fn(it) { get_string(it, "name") == issue_type })
@@ -538,7 +550,13 @@ pub async fn get_field_detail(
       "GET",
       "/rest/api/3/issue/createmeta/\{project}/issuetypes/\{type_id}",
     )
-    let createmeta_fields = @core.array_from(fields_data._get("fields"))
+    let createmeta_fields_raw = fields_data._get("fields")
+    guard not(@core.is_nullish(createmeta_fields_raw)) else {
+      raise JiraApiError(
+        "Unexpected API response: 'fields' not found for project '\{project}' issue type '\{issue_type}'",
+      )
+    }
+    let createmeta_fields = @core.array_from(createmeta_fields_raw)
     let target_field = createmeta_fields
       .iter()
       .find_first(fn(cf) { get_string(cf, "fieldId") == field_id })

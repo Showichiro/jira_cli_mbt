@@ -85,6 +85,14 @@ test "parse_args: fields with --project only" {
 }
 
 ///|
+test "parse_args: fields with --type only requires --project" {
+  inspect(
+    parse_args(["fields", "customfield_10001", "--type", "タスク"][:]),
+    content="Err(\"--type requires --project to be specified\")",
+  )
+}
+
+///|
 test "parse_issue_fields: empty list" {
   inspect(
     parse_issue_fields(" , "),

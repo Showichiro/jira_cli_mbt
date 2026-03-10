@@ -366,6 +366,9 @@ fn parse_get_field(
     Ok(flags) => {
       let project = flags.get("project").unwrap_or("")
       let issue_type = flags.get("issue_type").unwrap_or("")
+      if issue_type.length() > 0 && project.length() == 0 {
+        return Err("--type requires --project to be specified")
+      }
       Ok(@types.GetField(field_id~, project~, issue_type~))
     }
     Err(msg) => Err(msg)
