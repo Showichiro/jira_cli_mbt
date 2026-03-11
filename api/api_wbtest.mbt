@@ -147,6 +147,50 @@ test "parse_project" {
 }
 
 ///|
+test "parse_field with schema" {
+  let data = @core.from_entries([
+    ("id", @core.any("customfield_10001")),
+    ("name", @core.any("Severity")),
+    ("custom", @core.any(true)),
+    (
+      "schema",
+      @core.from_entries([
+        ("type", @core.any("option")),
+        (
+          "custom",
+          @core.any("com.atlassian.jira.plugin.system.customfieldtypes:select"),
+        ),
+      ]),
+    ),
+  ])
+  let field = parse_field(data)
+  assert_eq(field.id, "customfield_10001")
+  assert_eq(field.name, "Severity")
+  assert_true(field.custom)
+  assert_eq(field.schema_type, "option")
+  assert_eq(
+    field.schema_custom,
+    "com.atlassian.jira.plugin.system.customfieldtypes:select",
+  )
+}
+
+///|
+test "parse_field with nullish schema" {
+  let data = @core.from_entries([
+    ("id", @core.any("customfield_10002")),
+    ("name", @core.any("Notes")),
+    ("custom", @core.any(true)),
+    ("schema", js_null()),
+  ])
+  let field = parse_field(data)
+  assert_eq(field.id, "customfield_10002")
+  assert_eq(field.name, "Notes")
+  assert_true(field.custom)
+  assert_eq(field.schema_type, "")
+  assert_eq(field.schema_custom, "")
+}
+
+///|
 test "requested_api_fields excludes key and dedups aliases" {
   inspect(
     requested_api_fields([
