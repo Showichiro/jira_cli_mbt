@@ -4,6 +4,19 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
 }
 
 ///|
+fn issue_type_selection_message(
+  project : String,
+  types : Array[(String, String)],
+) -> String {
+  if types.is_empty() {
+    "No issue types found for project '\{project}'. Verify the project key is correct."
+  } else {
+    let type_list = types.map(fn(t) { "  - " + t.1 }).join("\n")
+    "Please specify --type. Available issue types for \{project}:\n" + type_list
+  }
+}
+
+///|
 pub async fn execute(cmd : Result[@types.Command, String]) -> String {
   match cmd {
     Err(msg) => @formatter.format_usage() + "\n\nError: " + msg
@@ -102,9 +115,7 @@ pub async fn execute(cmd : Result[@types.Command, String]) -> String {
       let config = @config.load_config()
       if project.length() > 0 && issue_type.length() == 0 {
         let types = @api.list_issue_types(config, project)
-        let type_list = types.map(fn(t) { "  - " + t.1 }).join("\n")
-        "Please specify --type. Available issue types for \{project}:\n" +
-        type_list
+        issue_type_selection_message(project, types)
       } else {
         @formatter.format_field_detail(
           @api.get_field_detail(config, field_id, project, issue_type),
