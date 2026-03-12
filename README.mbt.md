@@ -12,15 +12,21 @@ Licensed under Apache-2.0.
 npm install -g @showichiro/jira-cli
 ```
 
-### As a Codex skill
+### As a skill
 
 Install the bundled `jira-cli-mbt` skill with a `skills.sh` compatible CLI:
 
 ```sh
-npx skills add https://github.com/Showichiro/jira_cli_mbt/tree/main/skills/jira-cli-mbt -a codex
+npx skills add Showichiro/jira_cli_mbt
 ```
 
-This installs the repository's Jira CLI skill for Codex so the agent can use the documented command workflows directly.
+This installs the repository's Jira CLI skill so an agent can use the documented command workflows directly.
+
+If you want to pin the skill name explicitly, or your skill manager requires an explicit target agent, add options as needed, for example:
+
+```sh
+npx skills add Showichiro/jira_cli_mbt --skill jira-cli-mbt -a codex
+```
 
 ### From source
 
