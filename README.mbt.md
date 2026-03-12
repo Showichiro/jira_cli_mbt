@@ -12,6 +12,16 @@ Licensed under Apache-2.0.
 npm install -g @showichiro/jira-cli
 ```
 
+### As a Codex skill
+
+Install the bundled `jira-cli-mbt` skill with a `skills.sh` compatible CLI:
+
+```sh
+npx skills add https://github.com/Showichiro/jira_cli_mbt/tree/main/skills/jira-cli-mbt -a codex
+```
+
+This installs the repository's Jira CLI skill for Codex so the agent can use the documented command workflows directly.
+
 ### From source
 
 Requires [MoonBit toolchain](https://www.moonbitlang.com/download/) and Node.js >= 20.20.0.
