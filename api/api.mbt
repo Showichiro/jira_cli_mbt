@@ -565,11 +565,7 @@ pub async fn get_field_detail(
         createmeta_fields.push(f)
       }
       let total_raw = fields_data._get("total")
-      let total = if @core.is_nullish(total_raw) {
-        0
-      } else {
-        total_raw.cast()
-      }
+      let total = if @core.is_nullish(total_raw) { 0 } else { total_raw.cast() }
       start_at = start_at + page_fields.length()
       if page_fields.length() < page_size || start_at >= total {
         break
