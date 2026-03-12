@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jira CLI MBT"
+  short_description: "Operate this repository Jira CLI safely"
+  default_prompt: "Use $jira-cli-mbt to inspect or update Jira issues with this repository CLI."

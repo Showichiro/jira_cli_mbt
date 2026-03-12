@@ -129,8 +129,8 @@ pub fn format_field_detail(detail : @types.JiraFieldDetail) -> String {
 ///|
 pub fn format_usage() -> String {
   [
-    "Jira CLI (MoonBit)", "", "Usage: jira <command> [options]", "", "Commands:",
-    "  config      Set Jira configuration", "              --base-url <url> --email <email> --api-token <token>",
+    "Jira CLI (MoonBit)", "", "Usage: jira-cli <command> [options]", "Alias: jira-cli-mbt <command> [options]",
+    "", "Commands:", "  config      Set Jira configuration", "              --base-url <url> --email <email> --api-token <token>",
     "  issues      List assigned issues (default JQL)", "              [--jql <jql>] [--fields <field,...>]",
     "  issue       Get issue details", "              <key> [--fields <field,...>]",
     "              fields: key,summary,status,assignee,type,priority,description,customfield_<id>",
