@@ -251,7 +251,7 @@ test "format_usage: shows installed binary names" {
       #|
       #|Commands:
       #|  config           Set Jira configuration
-      #|                   config --base-url <url> --email <email> --api-token <token>
+      #|                   config [--base-url <url>] [--email <email>] [--api-token <token> | --api-token-stdin]
       #|  issue            Issue operations
       #|                   issue <subcommand> [options]
       #|  issue list       List assigned issues (default JQL)

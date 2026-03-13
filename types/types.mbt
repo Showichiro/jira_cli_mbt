@@ -208,7 +208,12 @@ pub fn default_detail_issue_fields() -> Array[IssueField] {
 
 ///|
 pub(all) enum Command {
-  Config(base_url~ : String, email~ : String, api_token~ : String)
+  Config(
+    base_url~ : String,
+    email~ : String,
+    api_token~ : String,
+    api_token_stdin~ : Bool
+  )
   ListIssues(
     jql~ : String,
     fields~ : Array[IssueField],

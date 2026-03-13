@@ -50,8 +50,12 @@ async fn execute_command(
             usage=@formatter.format_usage(),
           )
       }
-    @types.Config(base_url~, email~, api_token~) => {
-      @config.save_config({ base_url, email, api_token })
+    @types.Config(base_url~, email~, api_token~, api_token_stdin~) => {
+      @config.save_config(
+        @config.resolve_config_for_save(
+          base_url, email, api_token, api_token_stdin,
+        ),
+      )
       "Configuration saved to ~/.config/jira_cli_mbt/config.json"
     }
     @types.ListIssues(jql~, fields~, page_request~) => {

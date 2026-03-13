@@ -7,10 +7,17 @@ Use `jira-cli` in the examples below. If that binary is unavailable, substitute 
 Configure Jira access:
 
 ```sh
-jira-cli config --base-url https://your-site.atlassian.net --email you@example.com --api-token <token>
+jira-cli config [--base-url <url>] [--email <email>] [--api-token <token> | --api-token-stdin]
 ```
 
 The config file lives at `~/.config/jira_cli_mbt/config.json`.
+
+Resolution order:
+
+- `jira-cli config`: `flag > env > config`
+- other Jira commands: `env > config`
+
+Supported env vars: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`
 
 ## Output formats
 
@@ -199,6 +206,7 @@ jira-cli issue assign --key APP-123 --email user@example.com
 - `issue get`, `issue list`, and their legacy aliases accept `key`, `summary`, `status`, `assignee`, `type`, `priority`, `description`, and `customfield_<id>` in `--fields`.
 - Read-only commands, `issue create`, `issue update`, and `describe` accept `--format table|tsv|json`. In `json` mode, values are not truncated and the response includes a stable `schema_version`.
 - `issue create` and `issue update` accept `--dry-run`. Dry runs do not call Jira and do not require config.
+- `config` accepts `--api-token-stdin` so the API token does not need to appear in argv or shell history.
 - `type`, `issue_type`, and `issuetype` are equivalent field aliases.
 - Duplicate entries in `--fields` are de-duplicated.
 - `issue list`, `issue search`, `project list`, and `field list` accept `--limit`, `--start-at`, and `--all`. `--all` and `--limit` are mutually exclusive.

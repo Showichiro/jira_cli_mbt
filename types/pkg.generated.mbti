@@ -47,7 +47,7 @@ pub impl Eq for CliErrorCategory
 pub impl Show for CliErrorCategory
 
 pub(all) enum Command {
-  Config(base_url~ : String, email~ : String, api_token~ : String)
+  Config(base_url~ : String, email~ : String, api_token~ : String, api_token_stdin~ : Bool)
   ListIssues(jql~ : String, fields~ : Array[IssueField], page_request~ : PageRequest)
   GetIssue(key~ : String, fields~ : Array[IssueField])
   CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, String], dry_run~ : Bool)
