@@ -72,4 +72,13 @@ test "command specs resolve canonical names and aliases" {
     describe_spec.output_formats.map(fn(format) { format.name() }).join(","),
     "table,tsv,json",
   )
+
+  let issues_spec = @types.require_command_spec("issues").unwrap()
+  assert_eq(issues_spec.name, "issue list")
+
+  let create_spec = @types.require_command_spec("create").unwrap()
+  assert_eq(create_spec.name, "issue create")
+
+  let issue_group_spec = @types.require_command_spec("issue").unwrap()
+  assert_eq(issue_group_spec.name, "issue")
 }

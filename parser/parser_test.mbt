@@ -28,7 +28,15 @@ test "parse_args: help for one command" {
 }
 
 ///|
-test "parse_args: subcommand --help resolves to command help" {
+test "parse_args: help for noun-verb command" {
+  inspect(
+    @parser.parse_args(["help", "issue", "get"][:]),
+    content="Ok(Help(command_name=\"issue get\"))",
+  )
+}
+
+///|
+test "parse_args: group --help resolves to group help" {
   inspect(
     @parser.parse_args(["issue", "--help"][:]),
     content="Ok(Help(command_name=\"issue\"))",
@@ -36,10 +44,26 @@ test "parse_args: subcommand --help resolves to command help" {
 }
 
 ///|
-test "parse_args: describe command" {
+test "parse_args: noun-verb --help resolves to command help" {
+  inspect(
+    @parser.parse_args(["issue", "get", "--help"][:]),
+    content="Ok(Help(command_name=\"issue get\"))",
+  )
+}
+
+///|
+test "parse_args: describe noun group" {
   inspect(
     @parser.parse_args(["describe", "issue"][:]),
     content="Ok(Describe(command_name=\"issue\"))",
+  )
+}
+
+///|
+test "parse_args: describe noun-verb command" {
+  inspect(
+    @parser.parse_args(["describe", "issue", "get"][:]),
+    content="Ok(Describe(command_name=\"issue get\"))",
   )
 }
 
@@ -52,7 +76,15 @@ test "parse_args: describe requires one command name" {
 }
 
 ///|
-test "parse_args: list issues with default jql" {
+test "parse_args: issue list with default jql" {
+  inspect(
+    @parser.parse_args(["issue", "list"][:]),
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary]))",
+  )
+}
+
+///|
+test "parse_args: legacy issues alias with default jql" {
   inspect(
     @parser.parse_args(["issues"][:]),
     content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary]))",
@@ -92,7 +124,15 @@ test "parse_args: list issues rejects unknown field" {
 }
 
 ///|
-test "parse_args: get issue" {
+test "parse_args: issue get" {
+  inspect(
+    @parser.parse_args(["issue", "get", "PROJ-123"][:]),
+    content="Ok(GetIssue(key=\"PROJ-123\", fields=[Key, IssueType, Status, Priority, Assignee, Summary, Description]))",
+  )
+}
+
+///|
+test "parse_args: legacy issue get shorthand" {
   inspect(
     @parser.parse_args(["issue", "PROJ-123"][:]),
     content="Ok(GetIssue(key=\"PROJ-123\", fields=[Key, IssueType, Status, Priority, Assignee, Summary, Description]))",
@@ -110,8 +150,19 @@ test "parse_args: get issue with custom fields" {
 }
 
 ///|
-test "parse_args: issue missing key" {
-  assert_true(@parser.parse_args(["issue"][:]) is Err(_))
+test "parse_args: issue without subcommand shows group help" {
+  inspect(
+    @parser.parse_args(["issue"][:]),
+    content="Ok(Help(command_name=\"issue\"))",
+  )
+}
+
+///|
+test "parse_args: issue get missing key" {
+  inspect(
+    @parser.parse_args(["issue", "get"][:]),
+    content="Err(\"Usage: issue get <key>\")",
+  )
 }
 
 ///|
@@ -133,7 +184,17 @@ test "parse_args: config missing flags" {
 }
 
 ///|
-test "parse_args: create issue" {
+test "parse_args: noun-verb issue create" {
+  inspect(
+    @parser.parse_args(
+      ["issue", "create", "--project", "PROJ", "--summary", "Fix bug"][:],
+    ),
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}))",
+  )
+}
+
+///|
+test "parse_args: legacy create issue" {
   inspect(
     @parser.parse_args(
       ["create", "--project", "PROJ", "--summary", "Fix bug"][:],
@@ -312,7 +373,23 @@ test "parse_args: search" {
 }
 
 ///|
-test "parse_args: projects" {
+test "parse_args: noun-verb issue search" {
+  inspect(
+    @parser.parse_args(["issue", "search", "--jql", "status = Open"][:]),
+    content="Ok(Search(jql=\"status = Open\"))",
+  )
+}
+
+///|
+test "parse_args: noun-verb project list" {
+  inspect(
+    @parser.parse_args(["project", "list"][:]),
+    content="Ok(ListProjects)",
+  )
+}
+
+///|
+test "parse_args: legacy projects alias" {
   inspect(@parser.parse_args(["projects"][:]), content="Ok(ListProjects)")
 }
 

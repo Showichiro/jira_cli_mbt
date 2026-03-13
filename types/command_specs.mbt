@@ -45,6 +45,68 @@ fn issue_field_alias_note() -> String {
 }
 
 ///|
+fn issue_group_spec() -> CommandSpec {
+  {
+    name: "issue",
+    summary: "Issue operations",
+    usage: "issue <subcommand> [options]",
+    aliases: [],
+    positionals: [
+      {
+        name: "subcommand",
+        description: "One of list, get, create, update, transition, comment, assign, search",
+        required: true,
+      },
+    ],
+    flags: [],
+    output_formats: [],
+    notes: [
+      "Canonical subcommands: list, get, create, update, transition, comment, assign, search",
+      "Legacy aliases remain available during the migration",
+    ],
+    examples: [
+      "jira-cli issue list --format json", "jira-cli issue get PROJ-123", "jira-cli help issue",
+    ],
+  }
+}
+
+///|
+fn project_group_spec() -> CommandSpec {
+  {
+    name: "project",
+    summary: "Project operations",
+    usage: "project <subcommand> [options]",
+    aliases: [],
+    positionals: [
+      { name: "subcommand", description: "Currently only list", required: true },
+    ],
+    flags: [],
+    output_formats: [],
+    notes: ["Canonical subcommand: list"],
+    examples: ["jira-cli project list --format json", "jira-cli help project"],
+  }
+}
+
+///|
+fn field_group_spec() -> CommandSpec {
+  {
+    name: "field",
+    summary: "Field operations",
+    usage: "field <subcommand> [options]",
+    aliases: [],
+    positionals: [
+      { name: "subcommand", description: "One of list or get", required: true },
+    ],
+    flags: [],
+    output_formats: [],
+    notes: ["Canonical subcommands: list, get"],
+    examples: [
+      "jira-cli field list --format json", "jira-cli field get customfield_10001",
+    ],
+  }
+}
+
+///|
 fn config_command_spec() -> CommandSpec {
   {
     name: "config",
@@ -92,10 +154,10 @@ fn config_command_spec() -> CommandSpec {
 ///|
 fn issues_command_spec() -> CommandSpec {
   {
-    name: "issues",
+    name: "issue list",
     summary: "List assigned issues (default JQL)",
-    usage: "issues [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]",
-    aliases: [],
+    usage: "issue list [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]",
+    aliases: ["issues"],
     positionals: [],
     flags: [
       {
@@ -120,7 +182,7 @@ fn issues_command_spec() -> CommandSpec {
     output_formats: global_output_formats(),
     notes: [issues_field_note(), issue_field_alias_note()],
     examples: [
-      "jira-cli issues", "jira-cli issues --jql \"project = APP AND status = Open\" --format json",
+      "jira-cli issue list", "jira-cli issue list --jql \"project = APP AND status = Open\" --format json",
     ],
   }
 }
@@ -128,10 +190,10 @@ fn issues_command_spec() -> CommandSpec {
 ///|
 fn issue_command_spec() -> CommandSpec {
   {
-    name: "issue",
+    name: "issue get",
     summary: "Get issue details",
-    usage: "issue <key> [--fields <field,...>] [--format <table|tsv|json>]",
-    aliases: [],
+    usage: "issue get <key> [--fields <field,...>] [--format <table|tsv|json>]",
+    aliases: ["issue <key>"],
     positionals: [
       {
         name: "key",
@@ -153,7 +215,7 @@ fn issue_command_spec() -> CommandSpec {
     output_formats: global_output_formats(),
     notes: [issues_field_note(), issue_field_alias_note()],
     examples: [
-      "jira-cli issue PROJ-123", "jira-cli issue PROJ-123 --fields key,status,assignee,summary --format json",
+      "jira-cli issue get PROJ-123", "jira-cli issue get PROJ-123 --fields key,status,assignee,summary --format json",
     ],
   }
 }
@@ -161,10 +223,10 @@ fn issue_command_spec() -> CommandSpec {
 ///|
 fn create_command_spec() -> CommandSpec {
   {
-    name: "create",
+    name: "issue create",
     summary: "Create a new issue",
-    usage: "create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...",
-    aliases: [],
+    usage: "issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...",
+    aliases: ["create"],
     positionals: [],
     flags: [
       {
@@ -218,7 +280,8 @@ fn create_command_spec() -> CommandSpec {
       "--set only accepts customfield_* keys", "If a --set value is all digits, Jira receives it as an option id object",
     ],
     examples: [
-      "jira-cli create --project APP --summary \"Fix login bug\" --type Bug", "jira-cli create --project APP --summary \"Provision access\" --set customfield_10001=10401",
+      "jira-cli issue create --project APP --summary \"Fix login bug\" --type Bug",
+      "jira-cli issue create --project APP --summary \"Provision access\" --set customfield_10001=10401",
     ],
   }
 }
@@ -226,10 +289,10 @@ fn create_command_spec() -> CommandSpec {
 ///|
 fn update_command_spec() -> CommandSpec {
   {
-    name: "update",
+    name: "issue update",
     summary: "Update an existing issue",
-    usage: "update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...",
-    aliases: [],
+    usage: "issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...",
+    aliases: ["update"],
     positionals: [
       { name: "key", description: "Issue key to update", required: true },
     ],
@@ -303,7 +366,7 @@ fn update_command_spec() -> CommandSpec {
       "At least one update field is required", "update may partially succeed if assignee changes fail after field updates",
     ],
     examples: [
-      "jira-cli update APP-123 --priority High --labels backend,urgent", "jira-cli update APP-123 --summary \"Refine rollout plan\" --set customfield_10001=10401",
+      "jira-cli issue update APP-123 --priority High --labels backend,urgent", "jira-cli issue update APP-123 --summary \"Refine rollout plan\" --set customfield_10001=10401",
     ],
   }
 }
@@ -311,10 +374,10 @@ fn update_command_spec() -> CommandSpec {
 ///|
 fn transition_command_spec() -> CommandSpec {
   {
-    name: "transition",
+    name: "issue transition",
     summary: "Transition issue status",
-    usage: "transition --key <key> --status <status>",
-    aliases: [],
+    usage: "issue transition --key <key> --status <status>",
+    aliases: ["transition"],
     positionals: [],
     flags: [
       {
@@ -338,17 +401,19 @@ fn transition_command_spec() -> CommandSpec {
     ],
     output_formats: [],
     notes: ["Status names must match Jira transition names exactly"],
-    examples: ["jira-cli transition --key APP-123 --status \"In Progress\""],
+    examples: [
+      "jira-cli issue transition --key APP-123 --status \"In Progress\"",
+    ],
   }
 }
 
 ///|
 fn comment_command_spec() -> CommandSpec {
   {
-    name: "comment",
+    name: "issue comment",
     summary: "Add comment to issue",
-    usage: "comment --key <key> --text <text>",
-    aliases: [],
+    usage: "issue comment --key <key> --text <text>",
+    aliases: ["comment"],
     positionals: [],
     flags: [
       {
@@ -373,7 +438,7 @@ fn comment_command_spec() -> CommandSpec {
     output_formats: [],
     notes: ["Comments are sent to Jira as ADF text converted from plain text"],
     examples: [
-      "jira-cli comment --key APP-123 --text \"Investigating the root cause\"",
+      "jira-cli issue comment --key APP-123 --text \"Investigating the root cause\"",
     ],
   }
 }
@@ -381,10 +446,10 @@ fn comment_command_spec() -> CommandSpec {
 ///|
 fn assign_command_spec() -> CommandSpec {
   {
-    name: "assign",
+    name: "issue assign",
     summary: "Assign issue to user",
-    usage: "assign --key <key> --email <email>",
-    aliases: [],
+    usage: "issue assign --key <key> --email <email>",
+    aliases: ["assign"],
     positionals: [],
     flags: [
       {
@@ -408,17 +473,17 @@ fn assign_command_spec() -> CommandSpec {
     ],
     output_formats: [],
     notes: [],
-    examples: ["jira-cli assign --key APP-123 --email user@example.com"],
+    examples: ["jira-cli issue assign --key APP-123 --email user@example.com"],
   }
 }
 
 ///|
 fn search_command_spec() -> CommandSpec {
   {
-    name: "search",
+    name: "issue search",
     summary: "Search issues with JQL",
-    usage: "search --jql <jql> [--format <table|tsv|json>]",
-    aliases: [],
+    usage: "issue search --jql <jql> [--format <table|tsv|json>]",
+    aliases: ["search"],
     positionals: [],
     flags: [
       {
@@ -434,38 +499,54 @@ fn search_command_spec() -> CommandSpec {
     output_formats: global_output_formats(),
     notes: ["search requires an explicit JQL query"],
     examples: [
-      "jira-cli search --jql \"text ~ \\\"outage\\\" AND project = APP\"", "jira-cli search --jql \"project = APP\" --format json",
+      "jira-cli issue search --jql \"text ~ \\\"outage\\\" AND project = APP\"",
+      "jira-cli issue search --jql \"project = APP\" --format json",
     ],
   }
 }
 
 ///|
-fn projects_command_spec() -> CommandSpec {
+fn project_list_command_spec() -> CommandSpec {
   {
-    name: "projects",
+    name: "project list",
     summary: "List all projects",
-    usage: "projects [--format <table|tsv|json>]",
-    aliases: [],
+    usage: "project list [--format <table|tsv|json>]",
+    aliases: ["projects"],
     positionals: [],
     flags: [],
     output_formats: global_output_formats(),
     notes: [],
-    examples: ["jira-cli projects --format json"],
+    examples: ["jira-cli project list --format json"],
   }
 }
 
 ///|
-fn fields_command_spec() -> CommandSpec {
+fn field_list_command_spec() -> CommandSpec {
   {
-    name: "fields",
-    summary: "List custom fields or inspect one field",
-    usage: "fields [customfield_<id>] [--project <key>] [--type <type>] [--format <table|tsv|json>]",
-    aliases: [],
+    name: "field list",
+    summary: "List custom fields",
+    usage: "field list [--format <table|tsv|json>]",
+    aliases: ["fields"],
+    positionals: [],
+    flags: [],
+    output_formats: global_output_formats(),
+    notes: ["Use `field get` to inspect one custom field"],
+    examples: ["jira-cli field list --format json"],
+  }
+}
+
+///|
+fn field_get_command_spec() -> CommandSpec {
+  {
+    name: "field get",
+    summary: "Inspect one custom field",
+    usage: "field get <customfield_<id>> [--project <key>] [--type <type>] [--format <table|tsv|json>]",
+    aliases: ["fields <customfield_<id>>"],
     positionals: [
       {
         name: "customfield_<id>",
-        description: "Optional custom field id to inspect",
-        required: false,
+        description: "Custom field id to inspect",
+        required: true,
       },
     ],
     flags: [
@@ -493,7 +574,7 @@ fn fields_command_spec() -> CommandSpec {
       "--type requires --project", "If --project is given without --type, the CLI returns available issue types",
     ],
     examples: [
-      "jira-cli fields", "jira-cli fields customfield_10001 --project APP --type Bug --format json",
+      "jira-cli field get customfield_10001", "jira-cli field get customfield_10001 --project APP --type Bug --format json",
     ],
   }
 }
@@ -503,19 +584,19 @@ fn help_command_spec() -> CommandSpec {
   {
     name: "help",
     summary: "Show general help or help for one command",
-    usage: "help [command]",
+    usage: "help [command...]",
     aliases: ["--help", "-h"],
     positionals: [
       {
-        name: "command",
-        description: "Optional command name to inspect",
+        name: "command...",
+        description: "Optional command name or noun-verb path to inspect",
         required: false,
       },
     ],
     flags: [],
     output_formats: [],
     notes: ["<command> --help is also supported"],
-    examples: ["jira-cli help issue", "jira-cli issue --help"],
+    examples: ["jira-cli help issue get", "jira-cli issue --help"],
   }
 }
 
@@ -524,19 +605,19 @@ fn describe_command_spec() -> CommandSpec {
   {
     name: "describe",
     summary: "Describe one command for humans or agents",
-    usage: "describe <command> [--format <table|tsv|json>]",
+    usage: "describe <command...> [--format <table|tsv|json>]",
     aliases: [],
     positionals: [
       {
-        name: "command",
-        description: "Command name to describe",
+        name: "command...",
+        description: "Command name or noun-verb path to describe",
         required: true,
       },
     ],
     flags: [],
     output_formats: global_output_formats(),
     notes: ["Use --format json for stable machine-readable output"],
-    examples: ["jira-cli describe issue --format json"],
+    examples: ["jira-cli describe issue get --format json"],
   }
 }
 
@@ -544,6 +625,7 @@ fn describe_command_spec() -> CommandSpec {
 pub fn command_specs() -> Array[CommandSpec] {
   [
     config_command_spec(),
+    issue_group_spec(),
     issues_command_spec(),
     issue_command_spec(),
     create_command_spec(),
@@ -552,8 +634,11 @@ pub fn command_specs() -> Array[CommandSpec] {
     comment_command_spec(),
     assign_command_spec(),
     search_command_spec(),
-    projects_command_spec(),
-    fields_command_spec(),
+    project_group_spec(),
+    project_list_command_spec(),
+    field_group_spec(),
+    field_list_command_spec(),
+    field_get_command_spec(),
     help_command_spec(),
     describe_command_spec(),
   ]

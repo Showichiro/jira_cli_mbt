@@ -3,19 +3,20 @@ let default_jql : String = "assignee = currentUser() ORDER BY updated DESC"
 
 ///|
 pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
+  match parse_trailing_help(args) {
+    Some(command) => return Ok(command)
+    None => ()
+  }
   match args {
     [] => Ok(@types.Help(command_name=""))
     ["help" | "--help" | "-h"] => Ok(@types.Help(command_name=""))
-    ["help" | "--help" | "-h", command_name] => parse_help_target(command_name)
-    ["help" | "--help" | "-h", ..] => Err("Usage: help [command]")
-    ["describe", command_name] => parse_describe_target(command_name)
-    ["describe"] => Err("Usage: describe <command>")
-    ["describe", ..] => Err("Usage: describe <command>")
-    [command_name, "--help" | "-h"] => parse_help_target(command_name)
+    ["help" | "--help" | "-h", .. rest] => parse_help_target(rest)
+    ["describe", .. rest] => parse_describe_target(rest)
     ["config", .. rest] => parse_config(rest)
+    ["issue", .. rest] => parse_issue_group(rest)
+    ["project", .. rest] => parse_project_group(rest)
+    ["field", .. rest] => parse_field_group(rest)
     ["issues", .. rest] => parse_issues_cmd(rest)
-    ["issue", key, .. rest] => parse_issue_cmd(key, rest)
-    ["issue", ..] => Err("Usage: issue <key>")
     ["create", .. rest] => parse_create(rest)
     ["update", .. rest] => parse_update(rest)
     ["transition", .. rest] => parse_transition(rest)
@@ -30,8 +31,13 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
 }
 
 ///|
-fn parse_help_target(command_name : String) -> Result[@types.Command, String] {
-  match @types.require_command_spec(command_name) {
+fn parse_help_target(
+  command_name_parts : ArrayView[String],
+) -> Result[@types.Command, String] {
+  if command_name_parts.length() == 0 {
+    return Ok(@types.Help(command_name=""))
+  }
+  match @types.require_command_spec(join_tokens(command_name_parts)) {
     Ok(spec) => Ok(@types.Help(command_name=spec.name))
     Err(message) => Err(message)
   }
@@ -39,11 +45,106 @@ fn parse_help_target(command_name : String) -> Result[@types.Command, String] {
 
 ///|
 fn parse_describe_target(
-  command_name : String,
+  command_name_parts : ArrayView[String],
 ) -> Result[@types.Command, String] {
-  match @types.require_command_spec(command_name) {
+  guard command_name_parts.length() > 0 else {
+    return Err("Usage: describe <command>")
+  }
+  match @types.require_command_spec(join_tokens(command_name_parts)) {
     Ok(spec) => Ok(@types.Describe(command_name=spec.name))
     Err(message) => Err(message)
+  }
+}
+
+///|
+fn join_tokens(tokens : ArrayView[String]) -> String {
+  let parts : Array[String] = []
+  let mut i = 0
+  while i < tokens.length() {
+    parts.push(tokens[i])
+    i = i + 1
+  }
+  parts.join(" ")
+}
+
+///|
+fn parse_trailing_help(args : ArrayView[String]) -> @types.Command? {
+  guard args.length() >= 2 else { return None }
+  let last = args[args.length() - 1]
+  guard last == "--help" || last == "-h" else { return None }
+  let target = resolve_trailing_help_target(args)
+  match target {
+    Some(command_name) => Some(@types.Help(command_name~))
+    None => None
+  }
+}
+
+///|
+fn resolve_trailing_help_target(args : ArrayView[String]) -> String? {
+  let tokens : Array[String] = []
+  let mut i = 0
+  while i < args.length() - 1 {
+    tokens.push(args[i])
+    i = i + 1
+  }
+  let target = tokens.join(" ")
+  match @types.find_command_spec(target) {
+    Some(spec) => Some(spec.name)
+    None =>
+      match tokens {
+        ["issue", key, ..] if not(key.has_prefix("--")) => Some("issue get")
+        ["fields", field_id, ..] if not(field_id.has_prefix("--")) =>
+          Some("field get")
+        ["field", "get", field_id, ..] if not(field_id.has_prefix("--")) =>
+          Some("field get")
+        _ => None
+      }
+  }
+}
+
+///|
+fn parse_issue_group(
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match args {
+    [] => Ok(@types.Help(command_name="issue"))
+    ["list", .. rest] => parse_issues_cmd(rest)
+    ["get", key, .. rest] => parse_issue_cmd(key, rest)
+    ["get"] => Err("Usage: issue get <key>")
+    ["create", .. rest] => parse_create(rest)
+    ["update", .. rest] => parse_update(rest)
+    ["transition", .. rest] => parse_transition(rest)
+    ["comment", .. rest] => parse_comment(rest)
+    ["assign", .. rest] => parse_assign(rest)
+    ["search", .. rest] => parse_search(rest)
+    [key, .. rest] if not(key.has_prefix("--")) => parse_issue_cmd(key, rest)
+    [subcommand, ..] => Err("Unknown issue subcommand: \{subcommand}")
+  }
+}
+
+///|
+fn parse_project_group(
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match args {
+    [] => Ok(@types.Help(command_name="project"))
+    ["list"] => Ok(@types.ListProjects)
+    [subcommand, ..] => Err("Unknown project subcommand: \{subcommand}")
+  }
+}
+
+///|
+fn parse_field_group(
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match args {
+    [] => Ok(@types.Help(command_name="field"))
+    ["list"] => Ok(@types.ListFields)
+    ["get", field_id, .. rest] => parse_get_field(field_id, rest)
+    ["get"] => Err("Usage: field get <customfield_<id>>")
+    [field_id, .. rest] if not(field_id.has_prefix("--")) =>
+      parse_get_field(field_id, rest)
+    [subcommand, ..] => Err("Unknown field subcommand: \{subcommand}")
   }
 }
 
