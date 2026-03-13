@@ -243,6 +243,19 @@ test "slice_items returns remaining items for fetch_all" {
 }
 
 ///|
+test "issue_search_page_size uses stable cursor page size when offset exists" {
+  assert_eq(
+    issue_search_page_size(@types.limited_page_request(5, start_at=10)),
+    50,
+  )
+}
+
+///|
+test "issue_search_page_size keeps small single-page requests" {
+  assert_eq(issue_search_page_size(@types.limited_page_request(5)), 5)
+}
+
+///|
 test "build_issue_path omits query when key only" {
   inspect(
     build_issue_path("TEST-1", [@types.Key]),

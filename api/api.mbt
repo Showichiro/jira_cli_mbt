@@ -405,6 +405,18 @@ async fn search_issue_count(config : @types.JiraConfig, jql : String) -> Int {
 }
 
 ///|
+fn issue_search_page_size(page_request : @types.PageRequest) -> Int {
+  let page_size = 50
+  if page_request.fetch_all ||
+    page_request.start_at > 0 ||
+    page_request.limit > page_size {
+    page_size
+  } else {
+    page_request.limit
+  }
+}
+
+///|
 fn[T] slice_items(
   items : Array[T],
   page_request : @types.PageRequest,
@@ -440,36 +452,16 @@ pub async fn list_issues(
   page_request : @types.PageRequest,
 ) -> @types.JiraIssuePage {
   let total = search_issue_count(config, jql)
-  let page_size = 50
+  let request_size = issue_search_page_size(page_request)
   let items : Array[@types.JiraIssue] = []
   let mut skipped = 0
   let mut next_page_token = ""
   let mut is_last = false
   while true {
-    let request_size = if page_request.fetch_all {
-      page_size
-    } else {
-      let pending_skip = page_request.start_at - skipped
-      let pending_take = page_request.limit - items.length()
-      let requested = if pending_skip > 0 {
-        pending_skip + pending_take
-      } else {
-        pending_take
-      }
-      if requested > page_size {
-        page_size
-      } else {
-        requested
-      }
-    }
     let body = build_search_body(
       jql,
       fields,
-      if request_size > 0 {
-        request_size
-      } else {
-        page_size
-      },
+      request_size,
       next_page_token~,
     )
     let data = api_request(config, "POST", "/rest/api/3/search/jql", body~)
