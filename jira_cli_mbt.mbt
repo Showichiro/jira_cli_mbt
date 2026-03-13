@@ -54,10 +54,10 @@ async fn execute_command(
       @config.save_config({ base_url, email, api_token })
       "Configuration saved to ~/.config/jira_cli_mbt/config.json"
     }
-    @types.ListIssues(jql~, fields~) => {
+    @types.ListIssues(jql~, fields~, page_request~) => {
       let config = @config.load_config()
       @formatter.format_issue_list_for_output(
-        @api.list_issues(config, jql, fields),
+        @api.list_issues(config, jql, fields, page_request),
         fields,
         output_format,
       )
@@ -122,27 +122,27 @@ async fn execute_command(
       @api.assign_issue(config, key, email)
       "Issue \{key} assigned to \{email}"
     }
-    @types.Search(jql~) => {
+    @types.Search(jql~, page_request~) => {
       let config = @config.load_config()
       let fields = @types.default_list_issue_fields()
       @formatter.format_issue_list_for_output(
-        @api.list_issues(config, jql, fields),
+        @api.list_issues(config, jql, fields, page_request),
         fields,
         output_format,
         kind="search_results",
       )
     }
-    @types.ListProjects => {
+    @types.ListProjects(page_request~) => {
       let config = @config.load_config()
       @formatter.format_projects_for_output(
-        @api.list_projects(config),
+        @api.list_projects(config, page_request),
         output_format,
       )
     }
-    @types.ListFields => {
+    @types.ListFields(page_request~) => {
       let config = @config.load_config()
       @formatter.format_fields_for_output(
-        @api.list_fields(config),
+        @api.list_fields(config, page_request),
         output_format,
       )
     }

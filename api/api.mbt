@@ -363,12 +363,19 @@ fn requested_api_fields(fields : Array[@types.IssueField]) -> Array[String] {
 fn build_search_body(
   jql : String,
   fields : Array[@types.IssueField],
+  max_results : Int,
+  next_page_token? : String = "",
 ) -> @core.Any {
   let requested_fields = requested_api_fields(fields)
   @core.from_entries(
     [
       ("jql", @core.any(jql)),
-      ("maxResults", @core.any(20)),
+      ("maxResults", @core.any(max_results)),
+      ..if next_page_token.length() > 0 {
+        [("nextPageToken", @core.any(next_page_token))]
+      } else {
+        []
+      },
       ..if requested_fields.is_empty() {
         []
       } else {
@@ -376,6 +383,42 @@ fn build_search_body(
       },
     ],
   )
+}
+
+///|
+async fn search_issue_count(config : @types.JiraConfig, jql : String) -> Int {
+  let body = @core.from_entries([("jql", @core.any(jql))])
+  let data = api_request(
+    config,
+    "POST",
+    "/rest/api/3/search/approximate-count",
+    body~,
+  ) catch {
+    _ => return -1
+  }
+  let count = data._get("count")
+  if @core.is_nullish(count) {
+    -1
+  } else {
+    count.cast()
+  }
+}
+
+///|
+fn[T] slice_items(
+  items : Array[T],
+  page_request : @types.PageRequest,
+) -> Array[T] {
+  let visible : Array[T] = []
+  let mut index = page_request.start_at
+  while index < items.length() {
+    if not(page_request.fetch_all) && visible.length() >= page_request.limit {
+      break
+    }
+    visible.push(items[index])
+    index = index + 1
+  }
+  visible
 }
 
 ///|
@@ -394,10 +437,95 @@ pub async fn list_issues(
   config : @types.JiraConfig,
   jql : String,
   fields : Array[@types.IssueField],
-) -> Array[@types.JiraIssue] {
-  let body = build_search_body(jql, fields)
-  let data = api_request(config, "POST", "/rest/api/3/search/jql", body~)
-  parse_issues(data)
+  page_request : @types.PageRequest,
+) -> @types.JiraIssuePage {
+  let total = search_issue_count(config, jql)
+  let page_size = 50
+  let items : Array[@types.JiraIssue] = []
+  let mut skipped = 0
+  let mut next_page_token = ""
+  let mut is_last = false
+  while true {
+    let request_size = if page_request.fetch_all {
+      page_size
+    } else {
+      let pending_skip = page_request.start_at - skipped
+      let pending_take = page_request.limit - items.length()
+      let requested = if pending_skip > 0 {
+        pending_skip + pending_take
+      } else {
+        pending_take
+      }
+      if requested > page_size {
+        page_size
+      } else {
+        requested
+      }
+    }
+    let body = build_search_body(
+      jql,
+      fields,
+      if request_size > 0 {
+        request_size
+      } else {
+        page_size
+      },
+      next_page_token~,
+    )
+    let data = api_request(config, "POST", "/rest/api/3/search/jql", body~)
+    let page_items = parse_issues(data)
+    let skip_in_page = {
+      let pending_skip = page_request.start_at - skipped
+      if pending_skip > 0 {
+        if pending_skip > page_items.length() {
+          page_items.length()
+        } else {
+          pending_skip
+        }
+      } else {
+        0
+      }
+    }
+    let mut index = skip_in_page
+    while index < page_items.length() {
+      if not(page_request.fetch_all) && items.length() >= page_request.limit {
+        break
+      }
+      items.push(page_items[index])
+      index = index + 1
+    }
+    skipped = skipped + page_items.length()
+    is_last = get_string(data, "isLast") == "true"
+    next_page_token = get_string(data, "nextPageToken")
+    if page_items.is_empty() ||
+      is_last ||
+      next_page_token.length() == 0 ||
+      (not(page_request.fetch_all) && items.length() >= page_request.limit) {
+      break
+    }
+  }
+  let resolved_total = if total >= 0 {
+    total
+  } else if is_last {
+    skipped
+  } else {
+    -1
+  }
+  {
+    items,
+    page: @types.page_info(
+      page_request.start_at,
+      if page_request.fetch_all {
+        items.length()
+      } else {
+        page_request.limit
+      },
+      items.length(),
+      resolved_total,
+      page_request.fetch_all,
+      is_last,
+    ),
+  }
 }
 
 ///|
@@ -638,10 +766,20 @@ pub async fn assign_issue(
 ///|
 pub async fn list_projects(
   config : @types.JiraConfig,
-) -> Array[@types.JiraProject] {
+  page_request : @types.PageRequest,
+) -> @types.JiraProjectPage {
   let data = api_request(config, "GET", "/rest/api/3/project")
   let projects = @core.array_from(data)
-  projects.map(parse_project)
+  let items = projects.map(parse_project)
+  let visible = slice_items(items, page_request)
+  {
+    items: visible,
+    page: @types.page_info_from_request(
+      page_request,
+      items.length(),
+      visible.length(),
+    ),
+  }
 }
 
 ///|
@@ -665,12 +803,24 @@ fn parse_field(f : @core.Any) -> @types.JiraField {
 }
 
 ///|
-pub async fn list_fields(config : @types.JiraConfig) -> Array[@types.JiraField] {
+pub async fn list_fields(
+  config : @types.JiraConfig,
+  page_request : @types.PageRequest,
+) -> @types.JiraFieldPage {
   let data = api_request(config, "GET", "/rest/api/3/field")
   let fields = @core.array_from(data)
-  fields
-  .filter(fn(f) { f._get("custom").to_string() == "true" })
-  .map(parse_field)
+  let items = fields
+    .filter(fn(f) { f._get("custom").to_string() == "true" })
+    .map(parse_field)
+  let visible = slice_items(items, page_request)
+  {
+    items: visible,
+    page: @types.page_info_from_request(
+      page_request,
+      items.length(),
+      visible.length(),
+    ),
+  }
 }
 
 ///|

@@ -23,9 +23,10 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
     ["comment", .. rest] => parse_comment(rest)
     ["assign", .. rest] => parse_assign(rest)
     ["search", .. rest] => parse_search(rest)
-    ["projects"] => Ok(@types.ListProjects)
-    ["fields", field_id, .. rest] => parse_get_field(field_id, rest)
-    ["fields"] => Ok(@types.ListFields)
+    ["projects", .. rest] => parse_project_list(rest)
+    ["fields", field_id, .. rest] if not(field_id.has_prefix("--")) =>
+      parse_get_field(field_id, rest)
+    ["fields", .. rest] => parse_field_list(rest)
     [cmd, ..] => Err("Unknown command: \{cmd}")
   }
 }
@@ -123,32 +124,6 @@ fn parse_issue_group(
 }
 
 ///|
-fn parse_project_group(
-  args : ArrayView[String],
-) -> Result[@types.Command, String] {
-  match args {
-    [] => Ok(@types.Help(command_name="project"))
-    ["list"] => Ok(@types.ListProjects)
-    [subcommand, ..] => Err("Unknown project subcommand: \{subcommand}")
-  }
-}
-
-///|
-fn parse_field_group(
-  args : ArrayView[String],
-) -> Result[@types.Command, String] {
-  match args {
-    [] => Ok(@types.Help(command_name="field"))
-    ["list"] => Ok(@types.ListFields)
-    ["get", field_id, .. rest] => parse_get_field(field_id, rest)
-    ["get"] => Err("Usage: field get <customfield_<id>>")
-    [field_id, .. rest] if not(field_id.has_prefix("--")) =>
-      parse_get_field(field_id, rest)
-    [subcommand, ..] => Err("Unknown field subcommand: \{subcommand}")
-  }
-}
-
-///|
 pub fn parse_request(
   args : ArrayView[String],
 ) -> Result[@types.Invocation, String] {
@@ -222,6 +197,8 @@ let config_flags : Map[String, String] = {
 let issues_flags : Map[String, String] = {
   "--jql": "jql",
   "--fields": "fields",
+  "--limit": "limit",
+  "--start-at": "start_at",
 }
 
 ///|
@@ -248,7 +225,17 @@ let comment_flags : Map[String, String] = { "--key": "key", "--text": "text" }
 let assign_flags : Map[String, String] = { "--key": "key", "--email": "email" }
 
 ///|
-let search_flags : Map[String, String] = { "--jql": "jql" }
+let search_flags : Map[String, String] = {
+  "--jql": "jql",
+  "--limit": "limit",
+  "--start-at": "start_at",
+}
+
+///|
+let list_page_flags : Map[String, String] = {
+  "--limit": "limit",
+  "--start-at": "start_at",
+}
 
 ///|
 fn parse_flags(
@@ -322,20 +309,224 @@ fn resolve_issue_fields(
 
 ///|
 fn parse_issues_cmd(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, issues_flags, {}) {
-    Ok(flags) =>
-      match
-        resolve_issue_fields(
-          flags.get("fields"),
-          @types.default_list_issue_fields(),
-        ) {
-        Ok(fields) => {
-          let jql = flags.get("jql").unwrap_or(default_jql)
-          Ok(@types.ListIssues(jql~, fields~))
-        }
+  match extract_all_flag(args) {
+    Err(message) => Err(message)
+    Ok((fetch_all, rest)) =>
+      match parse_flags(rest[:], issues_flags, {}) {
+        Ok(flags) =>
+          match
+            (
+              resolve_issue_fields(
+                flags.get("fields"),
+                @types.default_list_issue_fields(),
+              ),
+              resolve_page_request(
+                flags,
+                fetch_all,
+                default_limit=20,
+                default_fetch_all=false,
+                usage=issues_usage,
+              ),
+            ) {
+            (Ok(fields), Ok(page_request)) => {
+              let jql = flags.get("jql").unwrap_or(default_jql)
+              Ok(@types.ListIssues(jql~, fields~, page_request~))
+            }
+            (Err(message), _) => Err(message)
+            (_, Err(message)) => Err(message)
+          }
         Err(message) => Err(message)
       }
+  }
+}
+
+///|
+let issues_usage : String = "Usage: issue list [--jql <jql>] [--fields <field,...>] [--limit <n>] [--start-at <n>] [--all]"
+
+///|
+let search_usage : String = "Usage: search --jql <jql> [--limit <n>] [--start-at <n>] [--all]"
+
+///|
+let project_list_usage : String = "Usage: project list [--limit <n>] [--start-at <n>] [--all]"
+
+///|
+let field_list_usage : String = "Usage: field list [--limit <n>] [--start-at <n>] [--all]"
+
+///|
+fn parse_non_negative_int(flag : String, value : String) -> Result[Int, String] {
+  guard value.length() > 0 else { return Err("\{flag} must not be empty") }
+  let mut parsed = 0
+  for i in 0..<value.length() {
+    let c = value[i].to_int().unsafe_to_char()
+    guard c >= '0' && c <= '9' else {
+      return Err("\{flag} must be a non-negative integer")
+    }
+    parsed = parsed * 10 + (c.to_int() - '0'.to_int())
+  }
+  Ok(parsed)
+}
+
+///|
+fn parse_positive_int(flag : String, value : String) -> Result[Int, String] {
+  match parse_non_negative_int(flag, value) {
+    Ok(parsed) if parsed > 0 => Ok(parsed)
+    Ok(_) => Err("\{flag} must be greater than zero")
     Err(message) => Err(message)
+  }
+}
+
+///|
+fn extract_all_flag(
+  args : ArrayView[String],
+) -> Result[(Bool, Array[String]), String] {
+  let rest : Array[String] = []
+  let mut fetch_all = false
+  let mut i = 0
+  while i < args.length() {
+    if args[i] == "--all" {
+      fetch_all = true
+    } else {
+      rest.push(args[i])
+    }
+    i = i + 1
+  }
+  Ok((fetch_all, rest))
+}
+
+///|
+fn resolve_page_request(
+  flags : Map[String, String],
+  fetch_all : Bool,
+  default_limit~ : Int,
+  default_fetch_all~ : Bool,
+  usage~ : String,
+) -> Result[@types.PageRequest, String] {
+  if fetch_all && flags.contains("limit") {
+    return Err("--all cannot be combined with --limit\n" + usage)
+  }
+  let start_at = match flags.get("start_at") {
+    Some(value) => parse_non_negative_int("--start-at", value)
+    None => Ok(0)
+  }
+  let limit = match flags.get("limit") {
+    Some(value) => parse_positive_int("--limit", value)
+    None => Ok(default_limit)
+  }
+  match (start_at, limit) {
+    (Err(message), _) => Err(message)
+    (_, Err(message)) => Err(message)
+    (Ok(start_at), Ok(limit)) =>
+      Ok(
+        if flags.contains("limit") {
+          @types.limited_page_request(limit, start_at~)
+        } else if fetch_all || default_fetch_all {
+          @types.full_page_request(start_at~)
+        } else {
+          @types.limited_page_request(limit, start_at~)
+        },
+      )
+  }
+}
+
+///|
+fn parse_project_list(
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match extract_all_flag(args) {
+    Err(message) => Err(message)
+    Ok((fetch_all, rest)) =>
+      match parse_flags(rest[:], list_page_flags, {}) {
+        Ok(flags) =>
+          match
+            resolve_page_request(
+              flags,
+              fetch_all,
+              default_limit=0,
+              default_fetch_all=true,
+              usage=project_list_usage,
+            ) {
+            Ok(page_request) => Ok(@types.ListProjects(page_request~))
+            Err(message) => Err(message)
+          }
+        Err(message) => Err(message)
+      }
+  }
+}
+
+///|
+fn parse_field_list(args : ArrayView[String]) -> Result[@types.Command, String] {
+  match extract_all_flag(args) {
+    Err(message) => Err(message)
+    Ok((fetch_all, rest)) =>
+      match parse_flags(rest[:], list_page_flags, {}) {
+        Ok(flags) =>
+          match
+            resolve_page_request(
+              flags,
+              fetch_all,
+              default_limit=0,
+              default_fetch_all=true,
+              usage=field_list_usage,
+            ) {
+            Ok(page_request) => Ok(@types.ListFields(page_request~))
+            Err(message) => Err(message)
+          }
+        Err(message) => Err(message)
+      }
+  }
+}
+
+///|
+fn parse_search(args : ArrayView[String]) -> Result[@types.Command, String] {
+  match extract_all_flag(args) {
+    Err(message) => Err(message)
+    Ok((fetch_all, rest)) =>
+      match parse_flags(rest[:], search_flags, {}) {
+        Ok(flags) =>
+          match
+            (
+              flags.get("jql"),
+              resolve_page_request(
+                flags,
+                fetch_all,
+                default_limit=20,
+                default_fetch_all=false,
+                usage=search_usage,
+              ),
+            ) {
+            (Some(jql), Ok(page_request)) =>
+              Ok(@types.Search(jql~, page_request~))
+            (None, _) => Err(search_usage)
+            (_, Err(message)) => Err(message)
+          }
+        Err(message) => Err(message)
+      }
+  }
+}
+
+///|
+fn parse_project_group(
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match args {
+    [] => Ok(@types.Help(command_name="project"))
+    ["list", .. rest] => parse_project_list(rest)
+    [subcommand, ..] => Err("Unknown project subcommand: \{subcommand}")
+  }
+}
+
+///|
+fn parse_field_group(
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match args {
+    [] => Ok(@types.Help(command_name="field"))
+    ["list", .. rest] => parse_field_list(rest)
+    ["get", field_id, .. rest] => parse_get_field(field_id, rest)
+    ["get"] => Err("Usage: field get <customfield_<id>>")
+    [field_id, .. rest] if not(field_id.has_prefix("--")) =>
+      parse_get_field(field_id, rest)
+    [subcommand, ..] => Err("Unknown field subcommand: \{subcommand}")
   }
 }
 
@@ -492,18 +683,6 @@ fn parse_assign(args : ArrayView[String]) -> Result[@types.Command, String] {
       match (flags.get("key"), flags.get("email")) {
         (Some(key), Some(email)) => Ok(@types.Assign(key~, email~))
         _ => Err("Usage: assign --key <key> --email <email>")
-      }
-    Err(message) => Err(message)
-  }
-}
-
-///|
-fn parse_search(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, search_flags, {}) {
-    Ok(flags) =>
-      match flags.get("jql") {
-        Some(jql) => Ok(@types.Search(jql~))
-        None => Err("Usage: search --jql <jql>")
       }
     Err(message) => Err(message)
   }
