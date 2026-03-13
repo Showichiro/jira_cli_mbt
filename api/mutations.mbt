@@ -1,7 +1,7 @@
 ///|
 fn sorted_custom_field_entries(
-  custom_fields : Map[String, String],
-) -> Array[(String, String)] {
+  custom_fields : Map[String, @types.CustomFieldInput],
+) -> Array[(String, @types.CustomFieldInput)] {
   let entries = custom_fields
     .iter()
     .map(fn(entry) { (entry.0, entry.1) })
@@ -42,7 +42,7 @@ fn create_issue_field_changes(
   summary : String,
   issue_type : String,
   description : String,
-  custom_fields : Map[String, String],
+  custom_fields : Map[String, @types.CustomFieldInput],
 ) -> Array[@types.MutationFieldChange] {
   let changes : Array[@types.MutationFieldChange] = [
     mutation_field_change("project", project),
@@ -53,7 +53,7 @@ fn create_issue_field_changes(
     changes.push(mutation_field_change("description", description))
   }
   for entry in sorted_custom_field_entries(custom_fields) {
-    changes.push(mutation_field_change(entry.0, entry.1))
+    changes.push(mutation_field_change(entry.0, entry.1.display_value()))
   }
   changes
 }
@@ -66,7 +66,7 @@ fn update_issue_field_changes(
   issue_type : String,
   labels : String,
   assignee : String,
-  custom_fields : Map[String, String],
+  custom_fields : Map[String, @types.CustomFieldInput],
 ) -> Array[@types.MutationFieldChange] {
   let changes : Array[@types.MutationFieldChange] = []
   if summary.length() > 0 {
@@ -89,7 +89,7 @@ fn update_issue_field_changes(
     changes.push(mutation_field_change("assignee", assignee))
   }
   for entry in sorted_custom_field_entries(custom_fields) {
-    changes.push(mutation_field_change(entry.0, entry.1))
+    changes.push(mutation_field_change(entry.0, entry.1.display_value()))
   }
   changes
 }
@@ -100,7 +100,7 @@ fn create_issue_field_entries(
   summary : String,
   issue_type : String,
   description : String,
-  custom_fields : Map[String, String],
+  custom_fields : Map[String, @types.CustomFieldInput],
 ) -> Array[(String, @core.Any)] {
   [
     ("project", @core.from_entries([("key", @core.any(project))])),
@@ -124,7 +124,7 @@ fn update_issue_field_entries(
   priority : String,
   issue_type : String,
   labels : String,
-  custom_fields : Map[String, String],
+  custom_fields : Map[String, @types.CustomFieldInput],
 ) -> Array[(String, @core.Any)] {
   let field_entries : Array[(String, @core.Any)] = []
   if summary.length() > 0 {
@@ -183,7 +183,7 @@ pub fn preview_create_issue(
   summary : String,
   issue_type : String,
   description : String,
-  custom_fields : Map[String, String],
+  custom_fields : Map[String, @types.CustomFieldInput],
 ) -> @types.MutationReport {
   let field_changes = create_issue_field_changes(
     project, summary, issue_type, description, custom_fields,
@@ -237,7 +237,7 @@ pub fn preview_update_issue(
   issue_type : String,
   labels : String,
   assignee : String,
-  custom_fields : Map[String, String],
+  custom_fields : Map[String, @types.CustomFieldInput],
 ) -> @types.MutationReport {
   let field_changes = update_issue_field_changes(
     summary, description, priority, issue_type, labels, assignee, custom_fields,

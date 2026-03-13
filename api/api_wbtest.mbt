@@ -258,8 +258,8 @@ test "issue_search_page_size keeps small single-page requests" {
 ///|
 test "preview_create_issue returns stable dry-run report" {
   let report = preview_create_issue("APP", "Fix login bug", "Bug", "", {
-    "customfield_200": "Zed",
-    "customfield_100": "Alpha",
+    "customfield_200": @types.custom_field_input_string("Zed"),
+    "customfield_100": @types.custom_field_input_string("Alpha"),
   })
   assert_eq(report.command, "issue create")
   assert_eq(report.status, @types.DryRun)
@@ -283,7 +283,7 @@ test "preview_update_issue includes planned operations and normalized labels" {
     "",
     "backend, urgent",
     "user@example.com",
-    { "customfield_10001": "10401" },
+    { "customfield_10001": @types.custom_field_input_option_id("10401") },
   )
   assert_eq(report.command, "issue update")
   assert_eq(report.status, @types.DryRun)
@@ -293,7 +293,7 @@ test "preview_update_issue includes planned operations and normalized labels" {
     report.field_changes
     .map(fn(change) { change.name + "=" + change.value })
     .join(","),
-    "summary=Refine rollout plan,priority=High,labels=backend,urgent,assignee=user@example.com,customfield_10001=10401",
+    "summary=Refine rollout plan,priority=High,labels=backend,urgent,assignee=user@example.com,customfield_10001={\"id\":\"10401\"}",
   )
   assert_eq(
     report.operations
@@ -441,32 +441,17 @@ test "truncate_string exceeds limit" {
 }
 
 ///|
-test "is_numeric: digits return true" {
-  assert_true(is_numeric("123"))
-  assert_true(is_numeric("0"))
-  assert_true(is_numeric("9999"))
-}
-
-///|
-test "is_numeric: non-digits return false" {
-  assert_false(is_numeric(""))
-  assert_false(is_numeric("abc"))
-  assert_false(is_numeric("12a3"))
-  assert_false(is_numeric("-1"))
-  assert_false(is_numeric("3.14"))
-  assert_false(is_numeric(" 123"))
-}
-
-///|
 test "custom_field_value: numeric wraps as id object" {
-  let result = @core.json_stringify(custom_field_value("123"))
+  let result = @core.json_stringify(
+    custom_field_value(@types.custom_field_input_option_id("123")),
+  )
   assert_true(result.contains("\"id\""))
   assert_true(result.contains("\"123\""))
 }
 
 ///|
 test "custom_field_value: non-numeric passes as string" {
-  let result = custom_field_value("hello")
+  let result = custom_field_value(@types.custom_field_input_string("hello"))
   assert_eq(result.to_string(), "hello")
 }
 

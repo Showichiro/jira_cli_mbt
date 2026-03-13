@@ -17,7 +17,7 @@ Prefer the canonical noun-verb forms: `issue list|get|create|update|transition|c
 2. Reuse existing config when possible. The CLI stores credentials in `~/.config/jira_cli_mbt/config.json`. Do not overwrite it unless the user asked to reconfigure Jira access.
 3. For read-only discovery commands, prefer `--format json` so downstream steps can consume stable machine-readable output.
 4. When you need the CLI's argument contract, prefer `describe <command> --format json` instead of inferring from README text.
-5. Before `issue create` or `issue update --set`, discover metadata first with `project list`, `field list`, and `field get <customfield_id> --project <KEY> --type <NAME>`.
+5. Before `issue create` or `issue update` with custom fields, discover metadata first with `project list`, `field list`, and `field get <customfield_id> --project <KEY> --type <NAME>`.
 6. After a mutating command, verify the result with `issue get <KEY>` or a focused `issue list --jql "key = KEY"` query.
 
 ## Guardrails
@@ -30,7 +30,9 @@ Prefer the canonical noun-verb forms: `issue list|get|create|update|transition|c
 - `issue search` requires `--jql` and uses the same list formatter as `issue list`.
 - `field list` lists only custom fields, not standard Jira fields.
 - `field get <id> --project <KEY>` without `--type` is a discovery step. The CLI will return the available issue types for that project so you can pick a valid `--type`.
-- `--set` only accepts `customfield_*` keys. If the value is numeric, the CLI sends it as an option ID; use option IDs returned by `field get <id> --project <KEY> --type <NAME>` when available.
+- `field get <id> --project <KEY> --type <NAME> --format json` includes `accepted_input` examples for both `--set` and `--set-json`.
+- `--set` and `--set-json` only accept `customfield_*` keys. Prefer `--set-json` for explicit typed values such as option IDs, arrays, or nested objects.
+- `--set` remains a legacy convenience shortcut. If the value is numeric, the CLI still sends it as `{ "id": "<value>" }` for backward compatibility.
 - `issue update` changes regular fields first and assignee second. If assignee assignment fails, other field updates may already have succeeded. Re-fetch the issue before retrying.
 - Transition names are matched case-insensitively by display name.
 

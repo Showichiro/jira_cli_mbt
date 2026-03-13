@@ -145,6 +145,49 @@ fn option_json(option : @types.JiraFieldOption) -> String {
 }
 
 ///|
+fn field_set_example(field_id : String) -> String {
+  "--set " + field_id + "=<value>"
+}
+
+///|
+fn field_set_json_examples(detail : @types.JiraFieldDetail) -> Array[String] {
+  let field_id = detail.field.id
+  let examples = ["--set-json '{\"" + field_id + "\":\"value\"}'"]
+  if not(detail.options.is_empty()) {
+    let option_id = detail.options[0].id
+    examples.push(
+      "--set-json '{\"" + field_id + "\":{\"id\":\"" + option_id + "\"}}'",
+    )
+  }
+  examples
+}
+
+///|
+fn field_input_notes(detail : @types.JiraFieldDetail) -> Array[String] {
+  let notes = [
+    "`--set` remains a convenience shortcut for simple string values.", "Prefer `--set-json` for explicit typed values and nested JSON.",
+  ]
+  if not(detail.options.is_empty()) {
+    notes.push(
+      "This field exposes allowed options; prefer `{\"id\":\"<option-id>\"}` with `--set-json`.",
+    )
+  }
+  notes
+}
+
+///|
+fn accepted_input_json(detail : @types.JiraFieldDetail) -> String {
+  json_object([
+    ("set_flag", json_string(field_set_example(detail.field.id))),
+    (
+      "set_json_examples",
+      json_array(field_set_json_examples(detail).map(json_string)),
+    ),
+    ("notes", json_array(field_input_notes(detail).map(json_string))),
+  ])
+}
+
+///|
 fn discovery_candidate_json(candidate : @types.DiscoveryCandidate) -> String {
   json_object([
     ("value", json_string(candidate.value)),
@@ -456,7 +499,7 @@ pub fn format_field_detail(detail : @types.JiraFieldDetail) -> String {
     "Type:        " + f.schema_type,
     "Custom Type: " + f.schema_custom,
   ]
-  if detail.options.is_empty() {
+  let body = if detail.options.is_empty() {
     lines.join("\n") + "\n\nNo options available for this field."
   } else {
     let opt_headers = ["ID", "VALUE"]
@@ -466,6 +509,13 @@ pub fn format_field_detail(detail : @types.JiraFieldDetail) -> String {
     "\n\nOptions:\n" +
     format_table(opt_headers, opt_rows, opt_widths)
   }
+  body +
+  "\n\nAccepted Input:\n" +
+  field_set_example(f.id) +
+  "\n" +
+  field_set_json_examples(detail).join("\n") +
+  "\n\nNotes:\n" +
+  field_input_notes(detail).map(fn(note) { "- " + note }).join("\n")
 }
 
 ///|
@@ -476,6 +526,13 @@ fn format_field_detail_tsv(detail : @types.JiraFieldDetail) -> String {
     ["field", "type", detail.field.schema_type],
     ["field", "custom_type", detail.field.schema_custom],
     ..detail.options.map(fn(option) { ["option", option.id, option.value] }),
+    ["accepted_input", "set_flag", field_set_example(detail.field.id)],
+    ..field_set_json_examples(detail).map(fn(example) {
+      ["accepted_input", "set_json", example]
+    }),
+    ..field_input_notes(detail).map(fn(note) {
+      ["accepted_input", "note", note]
+    }),
   ]
   [format_tsv_row(["section", "name", "value"]), ..rows.map(format_tsv_row)].join(
     "\n",
@@ -490,6 +547,7 @@ fn format_field_detail_json(detail : @types.JiraFieldDetail) -> String {
     json_object([
       ("field", field_json(detail.field)),
       ("options", json_array(detail.options.map(option_json))),
+      ("accepted_input", accepted_input_json(detail)),
     ]),
   )
 }

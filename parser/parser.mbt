@@ -615,10 +615,39 @@ fn parse_one_set_entry(value : String) -> Result[(String, String), String] {
 }
 
 ///|
-fn extract_set_flags(
+fn parse_set_json_entries(
+  value : String,
+) -> Result[Array[(String, @types.CustomFieldInput)], String] {
+  let parsed : Json = @json.parse(value) catch {
+    e => return Err("Invalid JSON for --set-json: \{e}")
+  }
+  match parsed {
+    Json::Object(entries) => {
+      let result : Array[(String, @types.CustomFieldInput)] = []
+      for entry in entries {
+        let key = entry.0
+        guard key.has_prefix("customfield_") &&
+          key.length() > "customfield_".length() else {
+          return Err(
+            "Only customfield_* keys are allowed with --set-json, got: '\{key}'",
+          )
+        }
+        result.push((key, @types.custom_field_input_json(entry.1)))
+      }
+      Ok(result)
+    }
+    _ =>
+      Err(
+        "--set-json expects a JSON object like '{\"customfield_10001\":{\"id\":\"10401\"}}'",
+      )
+  }
+}
+
+///|
+fn extract_custom_field_flags(
   args : ArrayView[String],
-) -> Result[(Array[(String, String)], Array[String]), String] {
-  let set_entries : Array[(String, String)] = []
+) -> Result[(Array[(String, @types.CustomFieldInput)], Array[String]), String] {
+  let set_entries : Array[(String, @types.CustomFieldInput)] = []
   let rest : Array[String] = []
   let mut i = 0
   while i < args.length() {
@@ -627,7 +656,25 @@ fn extract_set_flags(
         Err(msg) => return Err(msg)
         Ok((value, remaining)) => {
           match parse_one_set_entry(value) {
-            Ok(entry) => set_entries.push(entry)
+            Ok(entry) =>
+              set_entries.push(
+                (entry.0, @types.custom_field_input_from_set_value(entry.1)),
+              )
+            Err(msg) => return Err(msg)
+          }
+          let consumed = args.length() - i - 1 - remaining.length()
+          i = i + 1 + consumed
+        }
+      }
+    } else if args[i] == "--set-json" {
+      match collect_value("--set-json", args[i + 1:]) {
+        Err(msg) => return Err(msg)
+        Ok((value, remaining)) => {
+          match parse_set_json_entries(value) {
+            Ok(entries) =>
+              for entry in entries {
+                set_entries.push(entry)
+              }
             Err(msg) => return Err(msg)
           }
           let consumed = args.length() - i - 1 - remaining.length()
@@ -645,7 +692,7 @@ fn extract_set_flags(
 ///|
 fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
   let (dry_run, remaining) = extract_switch_flag("--dry-run", args)
-  match extract_set_flags(remaining[:]) {
+  match extract_custom_field_flags(remaining[:]) {
     Err(message) => Err(message)
     Ok((set_entries, rest)) =>
       match parse_flags(rest[:], create_flags, {}) {
@@ -654,7 +701,7 @@ fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
             (Some(project), Some(summary)) => {
               let issue_type = flags.get("issue_type").unwrap_or("Task")
               let description = flags.get("description").unwrap_or("")
-              let custom_fields : Map[String, String] = {}
+              let custom_fields : Map[String, @types.CustomFieldInput] = {}
               for entry in set_entries {
                 custom_fields[entry.0] = entry.1
               }
@@ -671,7 +718,7 @@ fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
             }
             _ =>
               Err(
-                "Usage: create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--dry-run]",
+                "Usage: create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--set-json <json-object>] [--dry-run]",
               )
           }
         Err(message) => Err(message)
@@ -726,7 +773,7 @@ let update_flags : Map[String, String] = {
 }
 
 ///|
-let update_usage : String = "Usage: update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--dry-run]"
+let update_usage : String = "Usage: update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run]"
 
 ///|
 let get_field_flags : Map[String, String] = {
@@ -759,7 +806,7 @@ fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {
   }
   let key = args[0]
   let (dry_run, rest) = extract_switch_flag("--dry-run", args[1:])
-  match extract_set_flags(rest[:]) {
+  match extract_custom_field_flags(rest[:]) {
     Err(message) => Err(message)
     Ok((set_entries, remaining)) =>
       match parse_flags(remaining[:], update_flags, {}) {
@@ -771,7 +818,7 @@ fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {
           let issue_type = flags.get("issue_type").unwrap_or("")
           let labels = flags.get("labels").unwrap_or("")
           let assignee = flags.get("assignee").unwrap_or("")
-          let custom_fields : Map[String, String] = {}
+          let custom_fields : Map[String, @types.CustomFieldInput] = {}
           for entry in set_entries {
             custom_fields[entry.0] = entry.1
           }

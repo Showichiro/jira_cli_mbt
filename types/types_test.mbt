@@ -62,6 +62,22 @@ test "jira issue field_value reads requested field" {
 }
 
 ///|
+test "custom field input helpers expose explicit and convenience shapes" {
+  assert_eq(
+    @types.custom_field_input_from_set_value("hello").display_value(),
+    "hello",
+  )
+  assert_eq(
+    @types.custom_field_input_from_set_value("10401").display_value(),
+    "{\"id\":\"10401\"}",
+  )
+  assert_eq(
+    @types.custom_field_input_json(Json::object({ "id": Json::string("1") })).display_value(),
+    "{\"id\":\"1\"}",
+  )
+}
+
+///|
 test "command specs resolve canonical names and aliases" {
   let help_spec = @types.require_command_spec("--help").unwrap()
   assert_eq(help_spec.name, "help")
@@ -91,6 +107,7 @@ test "command specs resolve canonical names and aliases" {
     "table,tsv,json",
   )
   assert_true(create_spec.flags.any(fn(flag) { flag.name == "--dry-run" }))
+  assert_true(create_spec.flags.any(fn(flag) { flag.name == "--set-json" }))
 
   let issue_group_spec = @types.require_command_spec("issue").unwrap()
   assert_eq(issue_group_spec.name, "issue")
@@ -101,4 +118,5 @@ test "command specs resolve canonical names and aliases" {
     "table,tsv,json",
   )
   assert_true(update_spec.flags.any(fn(flag) { flag.name == "--dry-run" }))
+  assert_true(update_spec.flags.any(fn(flag) { flag.name == "--set-json" }))
 }
