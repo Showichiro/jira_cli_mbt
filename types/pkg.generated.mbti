@@ -78,7 +78,7 @@ pub(all) struct CommandFlagSpec {
   description : String
   required : Bool
   repeatable : Bool
-  default_value : String
+  default_value : String?
   aliases : Array[String]
 }
 pub impl Show for CommandFlagSpec

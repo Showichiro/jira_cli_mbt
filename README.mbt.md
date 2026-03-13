@@ -95,7 +95,7 @@ The configuration is saved to `~/.config/jira_cli_mbt/config.json`.
 
 Resolution order:
 
-- `jira-cli config`: `base_url/email` は `flag > env > config`、`api_token` は `flag > config > env`
+- `jira-cli config`: `base_url/email` resolution is `flag > env > config`, and `api_token` resolution is `flag > config > env`
 - other Jira commands: `env > config`
 
 Supported environment variables: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`

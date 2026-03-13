@@ -92,6 +92,12 @@ test "command specs resolve canonical names and aliases" {
   let issues_spec = @types.require_command_spec("issues").unwrap()
   assert_eq(issues_spec.name, "issue list")
 
+  let issue_alias_spec = @types.require_command_spec("issue PROJ-123").unwrap()
+  assert_eq(issue_alias_spec.name, "issue get")
+
+  let field_alias_spec = @types.require_command_spec("fields customfield_10001").unwrap()
+  assert_eq(field_alias_spec.name, "field get")
+
   let config_spec = @types.require_command_spec("config").unwrap()
   assert_true(
     config_spec.flags.any(fn(flag) { flag.name == "--api-token-stdin" }),

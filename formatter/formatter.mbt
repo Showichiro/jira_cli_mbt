@@ -49,6 +49,14 @@ fn json_string(value : String) -> String {
 }
 
 ///|
+fn json_nullable_string(value : String?) -> String {
+  match value {
+    Some(text) => json_string(text)
+    None => "null"
+  }
+}
+
+///|
 fn json_bool(value : Bool) -> String {
   if value {
     "true"
@@ -827,10 +835,14 @@ fn yes_no(value : Bool) -> String {
 
 ///|
 fn default_label(value : String) -> String {
-  if value.length() == 0 {
-    "-"
-  } else {
-    value
+  value
+}
+
+///|
+fn default_value_display(value : String?) -> String {
+  match value {
+    Some(text) => default_label(text)
+    None => "-"
   }
 }
 
@@ -874,7 +886,7 @@ fn command_flag_json(spec : @types.CommandFlagSpec) -> String {
     ("description", json_string(spec.description)),
     ("required", json_bool(spec.required)),
     ("repeatable", json_bool(spec.repeatable)),
-    ("default_value", json_string(spec.default_value)),
+    ("default_value", json_nullable_string(spec.default_value)),
     ("aliases", json_array(spec.aliases.map(json_string))),
   ])
 }
@@ -931,7 +943,7 @@ fn format_command_description_tsv(spec : @types.CommandSpec) -> String {
       flag.value_name,
       yes_no(flag.required),
       yes_no(flag.repeatable),
-      flag.default_value,
+      default_value_display(flag.default_value),
       flag.description,
     ])
     for flag_alias in flag.aliases {
@@ -998,7 +1010,7 @@ pub fn format_command_help(spec : @types.CommandSpec) -> String {
         flag_value_display(flag),
         yes_no(flag.required),
         yes_no(flag.repeatable),
-        truncate(default_label(flag.default_value), 28),
+        truncate(default_value_display(flag.default_value), 28),
         truncate(flag.description, 44),
       ]
     })

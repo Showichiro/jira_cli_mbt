@@ -24,20 +24,7 @@ async fn execute_command(
 ) -> String {
   match command {
     @types.Help(command_name~) =>
-      if command_name.length() == 0 {
-        @formatter.format_usage()
-      } else {
-        match @types.require_command_spec(command_name) {
-          Ok(spec) => @formatter.format_command_help(spec)
-          Err(message) =>
-            @formatter.format_error_for_output(
-              @types.Usage,
-              message,
-              @types.Table,
-              usage=@formatter.format_usage(),
-            )
-        }
-      }
+      format_help_output(command_name, output_format)
     @types.Describe(command_name~) =>
       match @types.require_command_spec(command_name) {
         Ok(spec) =>
@@ -179,6 +166,27 @@ async fn execute_command(
           output_format,
         )
       }
+    }
+  }
+}
+
+///|
+fn format_help_output(
+  command_name : String,
+  output_format : @types.OutputFormat,
+) -> String {
+  if command_name.length() == 0 {
+    @formatter.format_usage()
+  } else {
+    match @types.require_command_spec(command_name) {
+      Ok(spec) => @formatter.format_command_help(spec)
+      Err(message) =>
+        @formatter.format_error_for_output(
+          @types.Usage,
+          message,
+          output_format,
+          usage=@formatter.format_usage(),
+        )
     }
   }
 }

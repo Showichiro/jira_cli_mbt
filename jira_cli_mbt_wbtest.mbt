@@ -46,3 +46,12 @@ test "failure_result returns text usage for table output" {
   assert_true(result.stderr.contains("Usage: jira-cli <command> [options]"))
   assert_true(result.stderr.contains("Error: Unknown command: nope"))
 }
+
+///|
+test "format_help_output returns structured json for unknown help target" {
+  let formatted = format_help_output("nope", @types.Json)
+  assert_true(formatted.contains("\"kind\":\"error\""))
+  assert_true(formatted.contains("\"category\":\"usage\""))
+  assert_true(formatted.contains("\"message\":\"Unknown command: nope\""))
+  assert_true(formatted.contains("\"usage\":\"Jira CLI (MoonBit)"))
+}

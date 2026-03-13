@@ -24,8 +24,29 @@ test "format_command_description_for_output: json includes self description" {
   )
   assert_true(formatted.contains("\"kind\":\"command_description\""))
   assert_true(formatted.contains("\"name\":\"issue get\""))
-  assert_true(formatted.contains("\"usage\":\"jira-cli issue get <key>"))
+  assert_true(
+    formatted.contains(
+      "\"usage\":\"jira-cli issue get <key> [--fields <field,...>] [--format <table|tsv|json>]\"",
+    ),
+  )
+  assert_true(
+    formatted.contains(
+      "\"default_value\":\"key,type,status,priority,assignee,summary,description\"",
+    ),
+  )
   assert_true(
     formatted.contains("\"output_formats\":[\"table\",\"tsv\",\"json\"]"),
   )
+}
+
+///|
+test "format_command_description_for_output: json preserves unset defaults as null" {
+  let spec = @types.require_command_spec("issue create").unwrap()
+  let formatted = @formatter.format_command_description_for_output(
+    spec,
+    @types.Json,
+  )
+  assert_true(formatted.contains("\"name\":\"--summary\""))
+  assert_true(formatted.contains("\"default_value\":null"))
+  assert_true(formatted.contains("\"default_value\":\"Task\""))
 }

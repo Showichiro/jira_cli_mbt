@@ -12,7 +12,7 @@ pub(all) struct CommandFlagSpec {
   description : String
   required : Bool
   repeatable : Bool
-  default_value : String
+  default_value : String?
   aliases : Array[String]
 } derive(Show)
 
@@ -45,7 +45,7 @@ fn issue_field_alias_note() -> String {
 }
 
 ///|
-fn pagination_limit_flag(default_value : String) -> CommandFlagSpec {
+fn pagination_limit_flag(default_value : String?) -> CommandFlagSpec {
   {
     name: "--limit",
     value_name: "n",
@@ -65,7 +65,7 @@ fn pagination_start_at_flag() -> CommandFlagSpec {
     description: "Zero-based result offset",
     required: false,
     repeatable: false,
-    default_value: "0",
+    default_value: Some("0"),
     aliases: [],
   }
 }
@@ -78,7 +78,7 @@ fn pagination_all_flag() -> CommandFlagSpec {
     description: "Return all remaining items from the offset",
     required: false,
     repeatable: false,
-    default_value: "false",
+    default_value: Some("false"),
     aliases: [],
   }
 }
@@ -160,7 +160,7 @@ fn config_command_spec() -> CommandSpec {
         description: "Jira base URL (for example https://your-site.atlassian.net)",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -169,7 +169,7 @@ fn config_command_spec() -> CommandSpec {
         description: "Atlassian account email",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -178,7 +178,7 @@ fn config_command_spec() -> CommandSpec {
         description: "Atlassian API token",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -187,7 +187,7 @@ fn config_command_spec() -> CommandSpec {
         description: "Read the API token from stdin",
         required: false,
         repeatable: false,
-        default_value: "false",
+        default_value: Some("false"),
         aliases: [],
       },
     ],
@@ -219,7 +219,7 @@ fn issues_command_spec() -> CommandSpec {
         description: "JQL query to run instead of the default assignee filter",
         required: false,
         repeatable: false,
-        default_value: "assignee = currentUser() ORDER BY updated DESC",
+        default_value: Some("assignee = currentUser() ORDER BY updated DESC"),
         aliases: [],
       },
       {
@@ -228,10 +228,10 @@ fn issues_command_spec() -> CommandSpec {
         description: "Comma-separated list of fields to display",
         required: false,
         repeatable: false,
-        default_value: "key,type,status,priority,summary",
+        default_value: Some("key,type,status,priority,summary"),
         aliases: [],
       },
-      pagination_limit_flag("20"),
+      pagination_limit_flag(Some("20")),
       pagination_start_at_flag(),
       pagination_all_flag(),
     ],
@@ -269,7 +269,9 @@ fn issue_command_spec() -> CommandSpec {
         description: "Comma-separated list of fields to display",
         required: false,
         repeatable: false,
-        default_value: "key,type,status,priority,assignee,summary,description",
+        default_value: Some(
+          "key,type,status,priority,assignee,summary,description",
+        ),
         aliases: [],
       },
     ],
@@ -296,7 +298,7 @@ fn create_command_spec() -> CommandSpec {
         description: "Project key",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -305,7 +307,7 @@ fn create_command_spec() -> CommandSpec {
         description: "Issue summary",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -314,7 +316,7 @@ fn create_command_spec() -> CommandSpec {
         description: "Issue type name",
         required: false,
         repeatable: false,
-        default_value: "Task",
+        default_value: Some("Task"),
         aliases: [],
       },
       {
@@ -323,7 +325,7 @@ fn create_command_spec() -> CommandSpec {
         description: "Plain-text issue description",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -332,7 +334,7 @@ fn create_command_spec() -> CommandSpec {
         description: "Set a custom field value",
         required: false,
         repeatable: true,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -341,7 +343,7 @@ fn create_command_spec() -> CommandSpec {
         description: "Merge custom field values from a JSON object",
         required: false,
         repeatable: true,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -350,7 +352,7 @@ fn create_command_spec() -> CommandSpec {
         description: "Preview the create request without calling Jira",
         required: false,
         repeatable: false,
-        default_value: "false",
+        default_value: Some("false"),
         aliases: [],
       },
     ],
@@ -387,7 +389,7 @@ fn update_command_spec() -> CommandSpec {
         description: "New issue summary",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -396,7 +398,7 @@ fn update_command_spec() -> CommandSpec {
         description: "New plain-text issue description",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -405,7 +407,7 @@ fn update_command_spec() -> CommandSpec {
         description: "Priority name",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -414,7 +416,7 @@ fn update_command_spec() -> CommandSpec {
         description: "Issue type name",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -423,7 +425,7 @@ fn update_command_spec() -> CommandSpec {
         description: "Comma-separated labels",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -432,7 +434,7 @@ fn update_command_spec() -> CommandSpec {
         description: "Assignee email address",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -441,7 +443,7 @@ fn update_command_spec() -> CommandSpec {
         description: "Set a custom field value",
         required: false,
         repeatable: true,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -450,7 +452,7 @@ fn update_command_spec() -> CommandSpec {
         description: "Merge custom field values from a JSON object",
         required: false,
         repeatable: true,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -459,7 +461,7 @@ fn update_command_spec() -> CommandSpec {
         description: "Preview the update request without calling Jira",
         required: false,
         repeatable: false,
-        default_value: "false",
+        default_value: Some("false"),
         aliases: [],
       },
     ],
@@ -493,7 +495,7 @@ fn transition_command_spec() -> CommandSpec {
         description: "Issue key",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -502,7 +504,7 @@ fn transition_command_spec() -> CommandSpec {
         description: "Visible Jira transition name",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
     ],
@@ -529,7 +531,7 @@ fn comment_command_spec() -> CommandSpec {
         description: "Issue key",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -538,7 +540,7 @@ fn comment_command_spec() -> CommandSpec {
         description: "Plain-text comment body",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
     ],
@@ -565,7 +567,7 @@ fn assign_command_spec() -> CommandSpec {
         description: "Issue key",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -574,7 +576,7 @@ fn assign_command_spec() -> CommandSpec {
         description: "Assignee email address",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
     ],
@@ -599,10 +601,10 @@ fn search_command_spec() -> CommandSpec {
         description: "JQL query to execute",
         required: true,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
-      pagination_limit_flag("20"),
+      pagination_limit_flag(Some("20")),
       pagination_start_at_flag(),
       pagination_all_flag(),
     ],
@@ -626,7 +628,7 @@ fn project_list_command_spec() -> CommandSpec {
     aliases: ["projects"],
     positionals: [],
     flags: [
-      pagination_limit_flag(""),
+      pagination_limit_flag(None),
       pagination_start_at_flag(),
       pagination_all_flag(),
     ],
@@ -649,7 +651,7 @@ fn field_list_command_spec() -> CommandSpec {
     aliases: ["fields"],
     positionals: [],
     flags: [
-      pagination_limit_flag(""),
+      pagination_limit_flag(None),
       pagination_start_at_flag(),
       pagination_all_flag(),
     ],
@@ -685,7 +687,7 @@ fn field_get_command_spec() -> CommandSpec {
         description: "Project key used to scope allowed options",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
       {
@@ -694,7 +696,7 @@ fn field_get_command_spec() -> CommandSpec {
         description: "Issue type used together with --project",
         required: false,
         repeatable: false,
-        default_value: "",
+        default_value: None,
         aliases: [],
       },
     ],
@@ -775,10 +777,50 @@ pub fn command_specs() -> Array[CommandSpec] {
 }
 
 ///|
+fn command_tokens(command : String) -> Array[String] {
+  command
+  .split(" ")
+  .map(fn(token) { token.trim().to_string() })
+  .filter(fn(token) { token.length() > 0 })
+  .to_array()
+}
+
+///|
+fn is_alias_placeholder(token : String) -> Bool {
+  token.length() >= 2 &&
+  token[0].to_int().unsafe_to_char() == '<' &&
+  token[token.length() - 1].to_int().unsafe_to_char() == '>'
+}
+
+///|
+fn alias_matches_pattern(pattern : String, normalized : String) -> Bool {
+  guard pattern.contains("<") && pattern.contains(">") else { return false }
+  let alias_tokens = command_tokens(pattern)
+  let command = command_tokens(normalized)
+  guard alias_tokens.length() == command.length() else { return false }
+  let mut i = 0
+  while i < alias_tokens.length() {
+    if not(is_alias_placeholder(alias_tokens[i])) &&
+      alias_tokens[i] != command[i] {
+      return false
+    }
+    i = i + 1
+  }
+  true
+}
+
+///|
 pub fn find_command_spec(name : String) -> CommandSpec? {
   let normalized = name.trim().to_string().to_lower()
   for spec in command_specs() {
     if spec.name == normalized || spec.aliases.contains(normalized) {
+      return Some(spec)
+    }
+  }
+  for spec in command_specs() {
+    if spec.aliases.any(fn(pattern) {
+        alias_matches_pattern(pattern, normalized)
+      }) {
       return Some(spec)
     }
   }
