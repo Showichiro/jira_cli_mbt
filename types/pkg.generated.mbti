@@ -50,8 +50,8 @@ pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String)
   ListIssues(jql~ : String, fields~ : Array[IssueField], page_request~ : PageRequest)
   GetIssue(key~ : String, fields~ : Array[IssueField])
-  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, String])
-  UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, String])
+  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, String], dry_run~ : Bool)
+  UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, String], dry_run~ : Bool)
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
   Assign(key~ : String, email~ : String)
@@ -211,6 +211,53 @@ pub(all) struct JiraProjectPage {
   page : PageInfo
 }
 pub impl Show for JiraProjectPage
+
+pub(all) struct MutationFieldChange {
+  name : String
+  value : String
+}
+pub impl Eq for MutationFieldChange
+pub impl Show for MutationFieldChange
+
+pub(all) struct MutationOperation {
+  name : String
+  status : MutationOperationStatus
+  detail : String
+}
+pub impl Eq for MutationOperation
+pub impl Show for MutationOperation
+
+pub(all) enum MutationOperationStatus {
+  Planned
+  Applied
+  Failed
+}
+pub fn MutationOperationStatus::name(Self) -> String
+pub impl Eq for MutationOperationStatus
+pub impl Show for MutationOperationStatus
+
+pub(all) struct MutationReport {
+  command : String
+  status : MutationStatus
+  issue_key : String
+  project_key : String
+  dry_run : Bool
+  message : String
+  field_changes : Array[MutationFieldChange]
+  operations : Array[MutationOperation]
+  discovery_hint : DiscoveryHint
+}
+pub impl Eq for MutationReport
+pub impl Show for MutationReport
+
+pub(all) enum MutationStatus {
+  DryRun
+  Success
+  PartialSuccess
+}
+pub fn MutationStatus::name(Self) -> String
+pub impl Eq for MutationStatus
+pub impl Show for MutationStatus
 
 pub(all) enum OutputFormat {
   Table

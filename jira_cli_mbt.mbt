@@ -75,13 +75,20 @@ async fn execute_command(
       summary~,
       issue_type~,
       description~,
-      custom_fields~
+      custom_fields~,
+      dry_run~
     ) => {
-      let config = @config.load_config()
-      let key = @api.create_issue(
-        config, project, summary, issue_type, description, custom_fields,
-      )
-      "Issue created: \{key}"
+      let report = if dry_run {
+        @api.preview_create_issue(
+          project, summary, issue_type, description, custom_fields,
+        )
+      } else {
+        let config = @config.load_config()
+        @api.create_issue(
+          config, project, summary, issue_type, description, custom_fields,
+        )
+      }
+      @formatter.format_mutation_report_for_output(report, output_format)
     }
     @types.UpdateIssue(
       key~,
@@ -91,21 +98,28 @@ async fn execute_command(
       issue_type~,
       labels~,
       assignee~,
-      custom_fields~
+      custom_fields~,
+      dry_run~
     ) => {
-      let config = @config.load_config()
-      @api.update_issue(
-        config,
-        key~,
-        summary~,
-        description~,
-        priority~,
-        issue_type~,
-        labels~,
-        assignee~,
-        custom_fields~,
-      )
-      "Issue \{key} updated"
+      let report = if dry_run {
+        @api.preview_update_issue(
+          key, summary, description, priority, issue_type, labels, assignee, custom_fields,
+        )
+      } else {
+        let config = @config.load_config()
+        @api.update_issue(
+          config,
+          key~,
+          summary~,
+          description~,
+          priority~,
+          issue_type~,
+          labels~,
+          assignee~,
+          custom_fields~,
+        )
+      }
+      @formatter.format_mutation_report_for_output(report, output_format)
     }
     @types.Transition(key~, status~) => {
       let config = @config.load_config()
@@ -217,6 +231,14 @@ pub async fn run(args : ArrayView[String]) -> @types.CommandRunResult {
         stderr: "",
         exit_code: 0,
       } catch {
+        @api.JiraMutationPartialSuccess(status_code~, report~) =>
+          {
+            stdout: "",
+            stderr: @formatter.format_mutation_report_for_output(
+              report, output_format,
+            ),
+            exit_code: classify_api_error(status_code, report.message).exit_code(),
+          }
         @api.JiraApiError(status_code~, message~, discovery_hint~) =>
           failure_result(
             classify_api_error(status_code, message),

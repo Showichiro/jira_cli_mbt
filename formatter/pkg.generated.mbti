@@ -30,6 +30,8 @@ pub fn format_issue_list_for_output(@types.JiraIssuePage, Array[@types.IssueFiel
 
 pub fn format_issue_types_for_output(String, String, Array[(String, String)], @types.OutputFormat) -> String
 
+pub fn format_mutation_report_for_output(@types.MutationReport, @types.OutputFormat) -> String
+
 pub fn format_projects(Array[@types.JiraProject]) -> String
 
 pub fn format_projects_for_output(@types.JiraProjectPage, @types.OutputFormat) -> String

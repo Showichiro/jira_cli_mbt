@@ -205,7 +205,7 @@ test "parse_args: noun-verb issue create" {
     @parser.parse_args(
       ["issue", "create", "--project", "PROJ", "--summary", "Fix bug"][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}, dry_run=false))",
   )
 }
 
@@ -215,7 +215,7 @@ test "parse_args: legacy create issue" {
     @parser.parse_args(
       ["create", "--project", "PROJ", "--summary", "Fix bug"][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}, dry_run=false))",
   )
 }
 
@@ -228,7 +228,7 @@ test "parse_args: create with type and description" {
         "Details",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Bug\", description=\"Details\", custom_fields={}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Bug\", description=\"Details\", custom_fields={}, dry_run=false))",
   )
 }
 
@@ -240,7 +240,7 @@ test "parse_args: create with one --set flag" {
         "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_12345=High",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_12345\": \"High\"}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_12345\": \"High\"}, dry_run=false))",
   )
 }
 
@@ -253,7 +253,7 @@ test "parse_args: create with multiple --set flags" {
         "--set", "customfield_67890=Team A",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_12345\": \"High\", \"customfield_67890\": \"Team A\"}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_12345\": \"High\", \"customfield_67890\": \"Team A\"}, dry_run=false))",
   )
 }
 
@@ -265,7 +265,7 @@ test "parse_args: create --set value contains equals sign" {
         "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=a=b",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"a=b\"}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"a=b\"}, dry_run=false))",
   )
 }
 
@@ -302,7 +302,7 @@ test "parse_args: create --set duplicate key last wins" {
         "--set", "customfield_123=second",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"second\"}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"second\"}, dry_run=false))",
   )
 }
 
@@ -339,7 +339,7 @@ test "parse_args: create --set multi-word value" {
         "world",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"hello world\"}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"hello world\"}, dry_run=false))",
   )
 }
 
@@ -352,7 +352,19 @@ test "parse_args: create --set multi-word value followed by another flag" {
         "world", "--set", "customfield_456=bar",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"hello world\", \"customfield_456\": \"bar\"}))",
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"hello world\", \"customfield_456\": \"bar\"}, dry_run=false))",
+  )
+}
+
+///|
+test "parse_args: create with dry-run" {
+  inspect(
+    @parser.parse_args(
+      [
+        "issue", "create", "--project", "PROJ", "--summary", "Fix bug", "--dry-run",
+      ][:],
+    ),
+    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}, dry_run=true))",
   )
 }
 
@@ -463,7 +475,7 @@ test "parse_args: disallowed flag returns error per subcommand" {
 test "parse_args: update with summary" {
   inspect(
     @parser.parse_args(["update", "TEST-1", "--summary", "New title"][:]),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"New title\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={}))",
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"New title\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={}, dry_run=false))",
   )
 }
 
@@ -473,7 +485,7 @@ test "parse_args: update with priority and labels" {
     @parser.parse_args(
       ["update", "TEST-1", "--priority", "High", "--labels", "bug,urgent"][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"High\", issue_type=\"\", labels=\"bug,urgent\", assignee=\"\", custom_fields={}))",
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"High\", issue_type=\"\", labels=\"bug,urgent\", assignee=\"\", custom_fields={}, dry_run=false))",
   )
 }
 
@@ -483,7 +495,7 @@ test "parse_args: update with assignee only" {
     @parser.parse_args(
       ["update", "TEST-1", "--assignee", "user@example.com"][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"user@example.com\", custom_fields={}))",
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"user@example.com\", custom_fields={}, dry_run=false))",
   )
 }
 
@@ -495,7 +507,7 @@ test "parse_args: update with description and custom field" {
         "update", "TEST-1", "--description", "New desc", "--set", "customfield_123=value",
       ][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"New desc\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={\"customfield_123\": \"value\"}))",
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"New desc\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={\"customfield_123\": \"value\"}, dry_run=false))",
   )
 }
 
@@ -503,7 +515,7 @@ test "parse_args: update with description and custom field" {
 test "parse_args: update with type only" {
   inspect(
     @parser.parse_args(["update", "TEST-1", "--type", "Bug"][:]),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"\", issue_type=\"Bug\", labels=\"\", assignee=\"\", custom_fields={}))",
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"\", issue_type=\"Bug\", labels=\"\", assignee=\"\", custom_fields={}, dry_run=false))",
   )
 }
 
@@ -517,7 +529,17 @@ test "parse_args: update with all flags" {
         "customfield_123=val",
       ][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"title\", description=\"desc\", priority=\"High\", issue_type=\"Bug\", labels=\"bug\", assignee=\"a@b.com\", custom_fields={\"customfield_123\": \"val\"}))",
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"title\", description=\"desc\", priority=\"High\", issue_type=\"Bug\", labels=\"bug\", assignee=\"a@b.com\", custom_fields={\"customfield_123\": \"val\"}, dry_run=false))",
+  )
+}
+
+///|
+test "parse_args: update with dry-run" {
+  inspect(
+    @parser.parse_args(
+      ["issue", "update", "TEST-1", "--summary", "title", "--dry-run"][:],
+    ),
+    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"title\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={}, dry_run=true))",
   )
 }
 

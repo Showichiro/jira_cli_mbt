@@ -14,7 +14,7 @@ The config file lives at `~/.config/jira_cli_mbt/config.json`.
 
 ## Output formats
 
-Read-only commands and `describe` support a global `--format table|tsv|json` option.
+Read-only commands, `issue create`, `issue update`, and `describe` support a global `--format table|tsv|json` option.
 
 - `table`: default human-readable output
 - `tsv`: tab-separated output for shell pipelines
@@ -32,6 +32,8 @@ jira-cli issue get APP-123 --format tsv
 - Success data is written to stdout.
 - Errors are written to stderr.
 - When `--format json` is requested, stderr errors are also JSON.
+- `issue create` and `issue update` return a stable `mutation_result` envelope on stdout for both applied and dry-run results.
+- Partial-success `issue update` results are written to stderr with the same `mutation_result` envelope.
 - Paginated read-only JSON responses include `page.start_at`, `page.limit`, `page.returned`, `page.total`, `page.fetch_all`, and `page.is_last`.
 
 Stable exit codes:
@@ -152,6 +154,7 @@ Create an issue:
 
 ```sh
 jira-cli issue create --project APP --summary "Fix login bug" --type Bug --description "Login fails on Safari"
+jira-cli issue create --project APP --summary "Fix login bug" --dry-run --format json
 ```
 
 Create an issue with custom fields:
@@ -164,6 +167,7 @@ Update an issue:
 
 ```sh
 jira-cli issue update APP-123 --priority High --labels backend,urgent
+jira-cli issue update APP-123 --summary "Refine rollout plan" --assignee user@example.com --dry-run --format json
 ```
 
 Update summary, description, assignee, and custom fields:
@@ -193,7 +197,8 @@ jira-cli issue assign --key APP-123 --email user@example.com
 ## Option Behavior
 
 - `issue get`, `issue list`, and their legacy aliases accept `key`, `summary`, `status`, `assignee`, `type`, `priority`, `description`, and `customfield_<id>` in `--fields`.
-- Read-only commands and `describe` accept `--format table|tsv|json`. In `json` mode, values are not truncated and the response includes a stable `schema_version`.
+- Read-only commands, `issue create`, `issue update`, and `describe` accept `--format table|tsv|json`. In `json` mode, values are not truncated and the response includes a stable `schema_version`.
+- `issue create` and `issue update` accept `--dry-run`. Dry runs do not call Jira and do not require config.
 - `type`, `issue_type`, and `issuetype` are equivalent field aliases.
 - Duplicate entries in `--fields` are de-duplicated.
 - `issue list`, `issue search`, `project list`, and `field list` accept `--limit`, `--start-at`, and `--all`. `--all` and `--limit` are mutually exclusive.
@@ -208,7 +213,7 @@ jira-cli issue assign --key APP-123 --email user@example.com
 
 ## Recovery Notes
 
-- `update` may partially succeed if field updates succeed but assignee assignment fails afterward. Re-fetch the issue before retrying.
+- `update` may partially succeed if field updates succeed but assignee assignment fails afterward. Re-fetch the issue before retrying only the failed assignee change.
 - `transition`, `assign`, and `field get` validation failures include structured recovery metadata. In `--format json`, use `candidates`, `required_args`, and `next_step` instead of parsing prose.
 - If `transition` fails because the target status is unavailable, retry with one of the returned transition candidates.
 - If `issue assign` returns multiple Jira users, retry with an exact candidate email from the structured error payload.

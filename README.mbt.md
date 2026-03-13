@@ -50,7 +50,7 @@ moon run --target js cmd/main -- <command> [options]
 
 ## Output formats
 
-Read-only commands and `describe` support a global `--format` option:
+Read-only commands, `issue create`, `issue update`, and `describe` support a global `--format` option:
 
 ```sh
 jira-cli --format json issue list
@@ -61,7 +61,7 @@ jira-cli issue get PROJ-123 --format tsv
 - `tsv` — tab-separated rows for shell pipelines
 - `json` — stable machine-readable output for agents and automation
 
-Supported commands: `issue list`, `issue get`, `issue search`, `project list`, `field list`, `field get`, `describe`.
+Supported commands: `issue list`, `issue get`, `issue create`, `issue update`, `issue search`, `project list`, `field list`, `field get`, `describe`.
 
 ## Exit codes
 
@@ -76,7 +76,7 @@ The CLI now uses stable non-zero exit codes so automation can branch on failures
 | `4` | Config or authentication error |
 | `5` | Validation / conflict error |
 
-Successful output is written to stdout. Errors are written to stderr. When `--format json` is requested, error output on stderr is also JSON and includes recovery fields such as `candidates`, `required_args`, and `next_step` when the CLI can suggest a retry. Paginated read-only JSON responses also include a `page` object with `start_at`, `limit`, `returned`, `total`, `fetch_all`, and `is_last`.
+Successful output is written to stdout. Errors are written to stderr. When `--format json` is requested, error output on stderr is also JSON and includes recovery fields such as `candidates`, `required_args`, and `next_step` when the CLI can suggest a retry. `issue create` and `issue update` return a stable `mutation_result` envelope on stdout for applied and dry-run results, and partial-success `issue update` results use the same envelope on stderr. Paginated read-only JSON responses also include a `page` object with `start_at`, `limit`, `returned`, `total`, `fetch_all`, and `is_last`.
 
 ## Configuration
 
@@ -196,7 +196,7 @@ Legacy alias: `jira-cli issue PROJ-123`
 Create a new issue.
 
 ```sh
-jira-cli issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
+jira-cli issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]
 ```
 
 - `--project` — Project key (required)
@@ -204,11 +204,14 @@ jira-cli issue create --project <key> --summary <text> [--type <type>] [--descri
 - `--type` — Issue type (default: `Task`)
 - `--description` — Issue description
 - `--set` — Set a custom field value (repeatable, format: `customfield_xxxxx=value`)
+- `--dry-run` — Preview the request without calling Jira
+- `--format` — Output the preview or result as `table`, `tsv`, or `json`
 
 Example:
 
 ```sh
 jira-cli issue create --project MYPROJ --summary "Fix login bug" --type Bug --description "Login fails on Safari"
+jira-cli issue create --project MYPROJ --summary "Fix login bug" --dry-run --format json
 ```
 
 Legacy alias: `jira-cli create`
@@ -218,7 +221,7 @@ Legacy alias: `jira-cli create`
 Update an existing issue.
 
 ```sh
-jira-cli issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
+jira-cli issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]
 ```
 
 - `<key>` — Issue key (required)
@@ -229,6 +232,8 @@ jira-cli issue update <key> [--summary <text>] [--description <text>] [--priorit
 - `--labels` — Comma-separated labels
 - `--assignee` — Assignee email
 - `--set` — Set a custom field value (repeatable, format: `customfield_xxxxx=value`)
+- `--dry-run` — Preview the update without calling Jira
+- `--format` — Output the preview or result as `table`, `tsv`, or `json`
 
 At least one field must be specified.
 
@@ -236,6 +241,7 @@ Example:
 
 ```sh
 jira-cli issue update PROJ-123 --priority High --labels "backend,urgent"
+jira-cli issue update PROJ-123 --summary "Refine rollout plan" --assignee user@example.com --dry-run --format json
 ```
 
 Legacy alias: `jira-cli update`

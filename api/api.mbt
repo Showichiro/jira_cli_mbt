@@ -458,12 +458,7 @@ pub async fn list_issues(
   let mut next_page_token = ""
   let mut is_last = false
   while true {
-    let body = build_search_body(
-      jql,
-      fields,
-      request_size,
-      next_page_token~,
-    )
+    let body = build_search_body(jql, fields, request_size, next_page_token~)
     let data = api_request(config, "POST", "/rest/api/3/search/jql", body~)
     let page_items = parse_issues(data)
     let skip_in_page = {
@@ -538,31 +533,22 @@ pub async fn create_issue(
   issue_type : String,
   description : String,
   custom_fields : Map[String, String],
-) -> String {
-  let custom_entries : Array[(String, @core.Any)] = custom_fields
-    .iter()
-    .map(fn(entry) { (entry.0, custom_field_value(entry.1)) })
-    .to_array()
+) -> @types.MutationReport {
+  let field_changes = create_issue_field_changes(
+    project, summary, issue_type, description, custom_fields,
+  )
   let body = @core.from_entries([
     (
       "fields",
       @core.from_entries(
-        [
-          ("project", @core.from_entries([("key", @core.any(project))])),
-          ("summary", @core.any(summary)),
-          ("issuetype", @core.from_entries([("name", @core.any(issue_type))])),
-          ..if description.length() > 0 {
-            [("description", build_adf_text(description))]
-          } else {
-            []
-          },
-          ..custom_entries,
-        ],
+        create_issue_field_entries(
+          project, summary, issue_type, description, custom_fields,
+        ),
       ),
     ),
   ])
   let result = api_request(config, "POST", "/rest/api/3/issue", body~)
-  get_string(result, "key")
+  create_issue_success_report(project, get_string(result, "key"), field_changes)
 }
 
 ///|
@@ -576,37 +562,14 @@ pub async fn update_issue(
   labels~ : String,
   assignee~ : String,
   custom_fields~ : Map[String, String],
-) -> Unit {
-  let field_entries : Array[(String, @core.Any)] = []
-  if summary.length() > 0 {
-    field_entries.push(("summary", @core.any(summary)))
-  }
-  if description.length() > 0 {
-    field_entries.push(("description", build_adf_text(description)))
-  }
-  if priority.length() > 0 {
-    field_entries.push(
-      ("priority", @core.from_entries([("name", @core.any(priority))])),
-    )
-  }
-  if issue_type.length() > 0 {
-    field_entries.push(
-      ("issuetype", @core.from_entries([("name", @core.any(issue_type))])),
-    )
-  }
-  if labels.length() > 0 {
-    let label_array = labels
-      .split(",")
-      .map(fn(l) { l.trim().to_string() })
-      .filter(fn(l) { l.length() > 0 })
-      .to_array()
-    field_entries.push(("labels", @core.any(label_array)))
-  }
-  for entry in custom_fields {
-    field_entries.push((entry.0, custom_field_value(entry.1)))
-  }
-  let fields_updated = not(field_entries.is_empty())
-  if fields_updated {
+) -> @types.MutationReport {
+  let field_changes = update_issue_field_changes(
+    summary, description, priority, issue_type, labels, assignee, custom_fields,
+  )
+  let field_entries = update_issue_field_entries(
+    summary, description, priority, issue_type, labels, custom_fields,
+  )
+  if not(field_entries.is_empty()) {
     let body = @core.from_entries([
       ("fields", @core.from_entries(field_entries)),
     ])
@@ -615,18 +578,20 @@ pub async fn update_issue(
   if assignee.length() > 0 {
     assign_issue(config, key, assignee) catch {
       JiraApiError(status_code~, message~, discovery_hint~) =>
-        raise JiraApiError(
-          status_code~,
-          message=if fields_updated {
-            "Fields updated but assignee change failed: " + message
-          } else {
-            message
-          },
-          discovery_hint~,
-        )
+        if field_entries.is_empty() {
+          raise JiraApiError(status_code~, message~, discovery_hint~)
+        } else {
+          raise JiraMutationPartialSuccess(
+            status_code~,
+            report=partial_update_report(
+              key, field_changes, field_entries, message, discovery_hint,
+            ),
+          )
+        }
       e => raise e
     }
   }
+  update_issue_success_report(key, field_changes, field_entries, assignee)
 }
 
 ///|

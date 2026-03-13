@@ -187,6 +187,25 @@ fn collect_value(
 }
 
 ///|
+fn extract_switch_flag(
+  flag : String,
+  args : ArrayView[String],
+) -> (Bool, Array[String]) {
+  let remaining : Array[String] = []
+  let mut found = false
+  let mut i = 0
+  while i < args.length() {
+    if args[i] == flag {
+      found = true
+    } else {
+      remaining.push(args[i])
+    }
+    i = i + 1
+  }
+  (found, remaining)
+}
+
+///|
 let config_flags : Map[String, String] = {
   "--base-url": "base_url",
   "--email": "email",
@@ -619,7 +638,8 @@ fn extract_set_flags(
 
 ///|
 fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match extract_set_flags(args) {
+  let (dry_run, remaining) = extract_switch_flag("--dry-run", args)
+  match extract_set_flags(remaining[:]) {
     Err(message) => Err(message)
     Ok((set_entries, rest)) =>
       match parse_flags(rest[:], create_flags, {}) {
@@ -639,12 +659,13 @@ fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
                   issue_type~,
                   description~,
                   custom_fields~,
+                  dry_run~,
                 ),
               )
             }
             _ =>
               Err(
-                "Usage: create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...",
+                "Usage: create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--dry-run]",
               )
           }
         Err(message) => Err(message)
@@ -699,7 +720,7 @@ let update_flags : Map[String, String] = {
 }
 
 ///|
-let update_usage : String = "Usage: update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]..."
+let update_usage : String = "Usage: update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--dry-run]"
 
 ///|
 let get_field_flags : Map[String, String] = {
@@ -731,8 +752,8 @@ fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {
     return Err(update_usage)
   }
   let key = args[0]
-  let rest = args[1:]
-  match extract_set_flags(rest) {
+  let (dry_run, rest) = extract_switch_flag("--dry-run", args[1:])
+  match extract_set_flags(rest[:]) {
     Err(message) => Err(message)
     Ok((set_entries, remaining)) =>
       match parse_flags(remaining[:], update_flags, {}) {
@@ -769,6 +790,7 @@ fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {
               labels~,
               assignee~,
               custom_fields~,
+              dry_run~,
             ),
           )
         }
