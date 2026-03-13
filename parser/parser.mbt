@@ -4,7 +4,14 @@ let default_jql : String = "assignee = currentUser() ORDER BY updated DESC"
 ///|
 pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
   match args {
-    ["help" | "--help" | "-h", ..] => Ok(@types.Help)
+    [] => Ok(@types.Help(command_name=""))
+    ["help" | "--help" | "-h"] => Ok(@types.Help(command_name=""))
+    ["help" | "--help" | "-h", command_name] => parse_help_target(command_name)
+    ["help" | "--help" | "-h", ..] => Err("Usage: help [command]")
+    ["describe", command_name] => parse_describe_target(command_name)
+    ["describe"] => Err("Usage: describe <command>")
+    ["describe", ..] => Err("Usage: describe <command>")
+    [command_name, "--help" | "-h"] => parse_help_target(command_name)
     ["config", .. rest] => parse_config(rest)
     ["issues", .. rest] => parse_issues_cmd(rest)
     ["issue", key, .. rest] => parse_issue_cmd(key, rest)
@@ -18,8 +25,25 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
     ["projects"] => Ok(@types.ListProjects)
     ["fields", field_id, .. rest] => parse_get_field(field_id, rest)
     ["fields"] => Ok(@types.ListFields)
-    [] => Ok(@types.Help)
     [cmd, ..] => Err("Unknown command: \{cmd}")
+  }
+}
+
+///|
+fn parse_help_target(command_name : String) -> Result[@types.Command, String] {
+  match @types.require_command_spec(command_name) {
+    Ok(spec) => Ok(@types.Help(command_name=spec.name))
+    Err(message) => Err(message)
+  }
+}
+
+///|
+fn parse_describe_target(
+  command_name : String,
+) -> Result[@types.Command, String] {
+  match @types.require_command_spec(command_name) {
+    Ok(spec) => Ok(@types.Describe(command_name=spec.name))
+    Err(message) => Err(message)
   }
 }
 

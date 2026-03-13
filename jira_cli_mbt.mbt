@@ -23,7 +23,33 @@ async fn execute_command(
   output_format : @types.OutputFormat,
 ) -> String {
   match command {
-    @types.Help => @formatter.format_usage()
+    @types.Help(command_name~) =>
+      if command_name.length() == 0 {
+        @formatter.format_usage()
+      } else {
+        match @types.require_command_spec(command_name) {
+          Ok(spec) => @formatter.format_command_help(spec)
+          Err(message) =>
+            @formatter.format_error_for_output(
+              @types.Usage,
+              message,
+              @types.Table,
+              usage=@formatter.format_usage(),
+            )
+        }
+      }
+    @types.Describe(command_name~) =>
+      match @types.require_command_spec(command_name) {
+        Ok(spec) =>
+          @formatter.format_command_description_for_output(spec, output_format)
+        Err(message) =>
+          @formatter.format_error_for_output(
+            @types.Usage,
+            message,
+            output_format,
+            usage=@formatter.format_usage(),
+          )
+      }
     @types.Config(base_url~, email~, api_token~) => {
       @config.save_config({ base_url, email, api_token })
       "Configuration saved to ~/.config/jira_cli_mbt/config.json"

@@ -1,16 +1,54 @@
 ///|
 test "parse_args: help command" {
-  inspect(@parser.parse_args(["help"][:]), content="Ok(Help)")
+  inspect(
+    @parser.parse_args(["help"][:]),
+    content="Ok(Help(command_name=\"\"))",
+  )
 }
 
 ///|
 test "parse_args: --help flag" {
-  inspect(@parser.parse_args(["--help"][:]), content="Ok(Help)")
+  inspect(
+    @parser.parse_args(["--help"][:]),
+    content="Ok(Help(command_name=\"\"))",
+  )
 }
 
 ///|
 test "parse_args: empty args shows help" {
-  inspect(@parser.parse_args([][:]), content="Ok(Help)")
+  inspect(@parser.parse_args([][:]), content="Ok(Help(command_name=\"\"))")
+}
+
+///|
+test "parse_args: help for one command" {
+  inspect(
+    @parser.parse_args(["help", "issue"][:]),
+    content="Ok(Help(command_name=\"issue\"))",
+  )
+}
+
+///|
+test "parse_args: subcommand --help resolves to command help" {
+  inspect(
+    @parser.parse_args(["issue", "--help"][:]),
+    content="Ok(Help(command_name=\"issue\"))",
+  )
+}
+
+///|
+test "parse_args: describe command" {
+  inspect(
+    @parser.parse_args(["describe", "issue"][:]),
+    content="Ok(Describe(command_name=\"issue\"))",
+  )
+}
+
+///|
+test "parse_args: describe requires one command name" {
+  inspect(
+    @parser.parse_args(["describe"][:]),
+    content="Err(\"Usage: describe <command>\")",
+  )
 }
 
 ///|
