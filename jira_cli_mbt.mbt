@@ -11,6 +11,13 @@ pub fn parse_request(
 }
 
 ///|
+pub fn parse_command_line(
+  args : ArrayView[String],
+) -> (@types.OutputFormat, Result[@types.Command, String]) {
+  @parser.parse_command_line(args)
+}
+
+///|
 async fn execute_command(
   command : @types.Command,
   output_format : @types.OutputFormat,
@@ -128,6 +135,69 @@ async fn execute_command(
         )
       }
     }
+  }
+}
+
+///|
+fn classify_api_error(
+  status_code : Int,
+  message : String,
+) -> @types.CliErrorCategory {
+  ignore(message)
+  match status_code {
+    400 | 409 | 422 => @types.Validation
+    401 | 403 => @types.Auth
+    404 => @types.NotFound
+    _ => @types.General
+  }
+}
+
+///|
+fn failure_result(
+  category : @types.CliErrorCategory,
+  message : String,
+  output_format : @types.OutputFormat,
+  usage? : String = "",
+) -> @types.CommandRunResult {
+  {
+    stdout: "",
+    stderr: @formatter.format_error_for_output(
+      category,
+      message,
+      output_format,
+      usage~,
+    ),
+    exit_code: category.exit_code(),
+  }
+}
+
+///|
+pub async fn run(args : ArrayView[String]) -> @types.CommandRunResult {
+  let (output_format, parsed) = parse_command_line(args)
+  match parsed {
+    Err(msg) =>
+      failure_result(
+        @types.Usage,
+        msg,
+        output_format,
+        usage=@formatter.format_usage(),
+      )
+    Ok(command) =>
+      {
+        stdout: execute_command(command, output_format),
+        stderr: "",
+        exit_code: 0,
+      } catch {
+        @api.JiraApiError(status_code~, message~) =>
+          failure_result(
+            classify_api_error(status_code, message),
+            message,
+            output_format,
+          )
+        @config.ConfigError(msg) =>
+          failure_result(@types.Config, msg, output_format)
+        e => failure_result(@types.General, "\{e}", output_format)
+      }
   }
 }
 

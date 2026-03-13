@@ -23,6 +23,7 @@ Treat `issues`, `issue`, `search`, `projects`, and `fields` as read-only discove
 
 - Use the actual executable names `jira-cli` or `jira-cli-mbt` in commands.
 - Read-only commands support `--format table|tsv|json`; use `json` by default for agent workflows unless a human explicitly wants table output.
+- Exit codes are stable: usage `2`, not found `3`, config/auth `4`, validation/conflict `5`.
 - `issues` defaults to `assignee = currentUser() ORDER BY updated DESC`.
 - `search` requires `--jql` and uses the same list formatter as `issues`.
 - `fields` lists only custom fields, not standard Jira fields.

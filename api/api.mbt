@@ -70,11 +70,8 @@ async fn api_request(
     }
     let msg = "API request failed: \{response.status} \{response.statusText}"
     raise JiraApiError(
-      if error_detail == "" {
-        msg
-      } else {
-        msg + " - " + error_detail
-      },
+      status_code=response.status,
+      message=if error_detail == "" { msg } else { msg + " - " + error_detail },
     )
   }
   if response.status == 204 {
@@ -332,12 +329,13 @@ pub async fn update_issue(
   }
   if assignee.length() > 0 {
     assign_issue(config, key, assignee) catch {
-      JiraApiError(msg) =>
+      JiraApiError(status_code~, message~) =>
         raise JiraApiError(
-          if fields_updated {
-            "Fields updated but assignee change failed: " + msg
+          status_code~,
+          message=if fields_updated {
+            "Fields updated but assignee change failed: " + message
           } else {
-            msg
+            message
           },
         )
       e => raise e
@@ -381,7 +379,11 @@ pub async fn transition_issue(
     .find_first(fn(t) { get_string(t, "name").to_lower() == lower_status })
   match found {
     Some(t) => do_transition(config, key, get_string(t, "id"))
-    None => raise JiraApiError("Transition '\{status_name}' not found")
+    None =>
+      raise JiraApiError(
+        status_code=404,
+        message="Transition '\{status_name}' not found",
+      )
   }
 }
 
@@ -436,7 +438,11 @@ pub async fn assign_issue(
   let users = @core.array_from(search_users(config, email))
   let account_id = match select_user_account_id(users, email) {
     Ok(account_id) => account_id
-    Err(message) => raise JiraApiError(message)
+    Err(message) =>
+      raise JiraApiError(
+        status_code=if message.contains("not found") { 404 } else { 409 },
+        message~,
+      )
   }
   let body = @core.from_entries([("accountId", @core.any(account_id))])
   let _ = api_request(config, "PUT", "/rest/api/3/issue/\{key}/assignee", body~)
@@ -493,7 +499,8 @@ pub async fn list_issue_types(
   let raw = data._get("issueTypes")
   guard not(@core.is_nullish(raw)) else {
     raise JiraApiError(
-      "Unexpected API response: 'issueTypes' not found for project '\{project}'",
+      status_code=500,
+      message="Unexpected API response: 'issueTypes' not found for project '\{project}'",
     )
   }
   let issue_types = @core.array_from(raw)
@@ -514,7 +521,11 @@ pub async fn get_field_detail(
     .find_first(fn(f) { get_string(f, "id") == field_id })
   let f = match field_data {
     Some(f) => f
-    None => raise JiraApiError("Field not found: " + field_id)
+    None =>
+      raise JiraApiError(
+        status_code=404,
+        message="Field not found: " + field_id,
+      )
   }
   let field = parse_field(f)
   let options : Array[@types.JiraFieldOption] = []
@@ -527,7 +538,8 @@ pub async fn get_field_detail(
     let issue_types_raw = types_data._get("issueTypes")
     guard not(@core.is_nullish(issue_types_raw)) else {
       raise JiraApiError(
-        "Unexpected API response: 'issueTypes' not found for project '\{project}'",
+        status_code=500,
+        message="Unexpected API response: 'issueTypes' not found for project '\{project}'",
       )
     }
     let issue_types = @core.array_from(issue_types_raw)
@@ -541,7 +553,8 @@ pub async fn get_field_detail(
           .map(fn(it) { get_string(it, "name") })
           .join(", ")
         raise JiraApiError(
-          "Issue type '\{issue_type}' not found. Available types: \{available}",
+          status_code=400,
+          message="Issue type '\{issue_type}' not found. Available types: \{available}",
         )
       }
     }
@@ -557,7 +570,8 @@ pub async fn get_field_detail(
       let createmeta_fields_raw = fields_data._get("fields")
       guard not(@core.is_nullish(createmeta_fields_raw)) else {
         raise JiraApiError(
-          "Unexpected API response: 'fields' not found for project '\{project}' issue type '\{issue_type}'",
+          status_code=500,
+          message="Unexpected API response: 'fields' not found for project '\{project}' issue type '\{issue_type}'",
         )
       }
       let page_fields = @core.array_from(createmeta_fields_raw)

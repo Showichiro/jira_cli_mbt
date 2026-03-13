@@ -1,4 +1,4 @@
 ///|
 pub suberror JiraApiError {
-  JiraApiError(String)
+  JiraApiError(status_code~ : Int, message~ : String)
 }

@@ -58,6 +58,11 @@ fn json_bool(value : Bool) -> String {
 }
 
 ///|
+fn json_int(value : Int) -> String {
+  value.to_string()
+}
+
+///|
 fn json_array(items : Array[String]) -> String {
   "[" + items.join(",") + "]"
 }
@@ -453,6 +458,38 @@ pub fn format_issue_types_for_output(
           ),
         ),
       ])
+  }
+}
+
+///|
+pub fn format_error_for_output(
+  category : @types.CliErrorCategory,
+  message : String,
+  output_format : @types.OutputFormat,
+  usage? : String = "",
+) -> String {
+  match output_format {
+    @types.Json =>
+      json_object(
+        [
+          ("schema_version", json_string("v1")),
+          ("kind", json_string("error")),
+          ("category", json_string(category.name())),
+          ("exit_code", json_int(category.exit_code())),
+          ("message", json_string(message)),
+          ..if usage.length() > 0 {
+            [("usage", json_string(usage))]
+          } else {
+            []
+          },
+        ],
+      )
+    _ =>
+      if usage.length() > 0 {
+        usage + "\n\nError: " + message
+      } else {
+        "Error: " + message
+      }
   }
 }
 

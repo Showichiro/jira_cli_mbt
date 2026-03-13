@@ -12,7 +12,11 @@ pub async fn execute_request(Result[@types.Invocation, String]) -> String
 
 pub fn parse_args(ArrayView[String]) -> Result[@types.Command, String]
 
+pub fn parse_command_line(ArrayView[String]) -> (@types.OutputFormat, Result[@types.Command, String])
+
 pub fn parse_request(ArrayView[String]) -> Result[@types.Invocation, String]
+
+pub async fn run(ArrayView[String]) -> @types.CommandRunResult
 
 // Errors
 

@@ -27,6 +27,21 @@ jira-cli --format json issues
 jira-cli issue APP-123 --format tsv
 ```
 
+## Exit codes and streams
+
+- Success data is written to stdout.
+- Errors are written to stderr.
+- When `--format json` is requested, stderr errors are also JSON.
+
+Stable exit codes:
+
+- `0`: success
+- `1`: general failure
+- `2`: usage / parse error
+- `3`: not found
+- `4`: config or authentication error
+- `5`: validation / conflict error
+
 ## Read-Only Commands
 
 List the current user's recently updated issues:

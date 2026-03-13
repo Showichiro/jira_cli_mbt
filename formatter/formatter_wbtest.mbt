@@ -394,3 +394,30 @@ test "format_issue_types_for_output: json wrapper lists choices" {
     ),
   )
 }
+
+///|
+test "format_error_for_output: text mode includes usage" {
+  inspect(
+    format_error_for_output(
+      @types.Usage,
+      "Unknown command: nope",
+      @types.Table,
+      usage="Usage: jira-cli <command> [options]",
+    ),
+    content=(
+      #|Usage: jira-cli <command> [options]
+      #|
+      #|Error: Unknown command: nope
+    ),
+  )
+}
+
+///|
+test "format_error_for_output: json mode is structured" {
+  inspect(
+    format_error_for_output(@types.Validation, "Invalid value", @types.Json),
+    content=(
+      #|{"schema_version":"v1","kind":"error","category":"validation","exit_code":5,"message":"Invalid value"}
+    ),
+  )
+}
