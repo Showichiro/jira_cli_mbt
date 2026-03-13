@@ -251,39 +251,39 @@ test "format_usage: shows installed binary names" {
       #|
       #|Commands:
       #|  config           Set Jira configuration
-      #|              config --base-url <url> --email <email> --api-token <token>
+      #|                   config --base-url <url> --email <email> --api-token <token>
       #|  issue            Issue operations
-      #|              issue <subcommand> [options]
+      #|                   issue <subcommand> [options]
       #|  issue list       List assigned issues (default JQL)
-      #|              issue list [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]
+      #|                   issue list [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]
       #|  issue get        Get issue details
-      #|              issue get <key> [--fields <field,...>] [--format <table|tsv|json>]
+      #|                   issue get <key> [--fields <field,...>] [--format <table|tsv|json>]
       #|  issue create     Create a new issue
-      #|              issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
+      #|                   issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
       #|  issue update     Update an existing issue
-      #|              issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
+      #|                   issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
       #|  issue transition Transition issue status
-      #|              issue transition --key <key> --status <status>
+      #|                   issue transition --key <key> --status <status>
       #|  issue comment    Add comment to issue
-      #|              issue comment --key <key> --text <text>
+      #|                   issue comment --key <key> --text <text>
       #|  issue assign     Assign issue to user
-      #|              issue assign --key <key> --email <email>
+      #|                   issue assign --key <key> --email <email>
       #|  issue search     Search issues with JQL
-      #|              issue search --jql <jql> [--format <table|tsv|json>]
+      #|                   issue search --jql <jql> [--format <table|tsv|json>]
       #|  project          Project operations
-      #|              project <subcommand> [options]
+      #|                   project <subcommand> [options]
       #|  project list     List all projects
-      #|              project list [--format <table|tsv|json>]
+      #|                   project list [--format <table|tsv|json>]
       #|  field            Field operations
-      #|              field <subcommand> [options]
+      #|                   field <subcommand> [options]
       #|  field list       List custom fields
-      #|              field list [--format <table|tsv|json>]
+      #|                   field list [--format <table|tsv|json>]
       #|  field get        Inspect one custom field
-      #|              field get <customfield_<id>> [--project <key>] [--type <type>] [--format <table|tsv|json>]
+      #|                   field get <customfield_<id>> [--project <key>] [--type <type>] [--format <table|tsv|json>]
       #|  help             Show general help or help for one command
-      #|              help [command...]
+      #|                   help [command...]
       #|  describe         Describe one command for humans or agents
-      #|              describe <command...> [--format <table|tsv|json>]
+      #|                   describe <command...> [--format <table|tsv|json>]
       #|
       #|Run `jira-cli help <command>` for per-command help.
       #|Run `jira-cli describe <command> --format json` for machine-readable metadata.

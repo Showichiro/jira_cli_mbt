@@ -718,6 +718,7 @@ pub fn format_usage() -> String {
       name_width = spec.name.length()
     }
   }
+  let usage_indent = " ".repeat(name_width + 3)
   let lines : Array[String] = [
     "Jira CLI (MoonBit)", "", "Usage: jira-cli <command> [options]", "Alias: jira-cli-mbt <command> [options]",
     "", "Global options:", "  --format    table | tsv | json (supported by read-only commands and describe, default: table)",
@@ -725,7 +726,7 @@ pub fn format_usage() -> String {
   ]
   for spec in specs {
     lines.push("  " + pad_right(spec.name, name_width) + " " + spec.summary)
-    lines.push("              " + spec.usage)
+    lines.push(usage_indent + spec.usage)
   }
   lines.push("")
   lines.push("Run `jira-cli help <command>` for per-command help.")
