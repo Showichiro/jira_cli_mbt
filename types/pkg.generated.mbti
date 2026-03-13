@@ -16,6 +16,14 @@ pub fn empty_discovery_hint() -> DiscoveryHint
 
 pub fn find_command_spec(String) -> CommandSpec?
 
+pub fn full_page_request(start_at? : Int) -> PageRequest
+
+pub fn limited_page_request(Int, start_at? : Int) -> PageRequest
+
+pub fn page_info(Int, Int, Int, Int, Bool, Bool) -> PageInfo
+
+pub fn page_info_from_request(PageRequest, Int, Int) -> PageInfo
+
 pub fn parse_issue_field(String) -> Result[IssueField, String]
 
 pub fn parse_output_format(String) -> Result[OutputFormat, String]
@@ -40,16 +48,16 @@ pub impl Show for CliErrorCategory
 
 pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String)
-  ListIssues(jql~ : String, fields~ : Array[IssueField])
+  ListIssues(jql~ : String, fields~ : Array[IssueField], page_request~ : PageRequest)
   GetIssue(key~ : String, fields~ : Array[IssueField])
   CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, String])
   UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, String])
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
   Assign(key~ : String, email~ : String)
-  Search(jql~ : String)
-  ListProjects
-  ListFields
+  Search(jql~ : String, page_request~ : PageRequest)
+  ListProjects(page_request~ : PageRequest)
+  ListFields(page_request~ : PageRequest)
   GetField(field_id~ : String, project~ : String, issue_type~ : String)
   Help(command_name~ : String)
   Describe(command_name~ : String)
@@ -166,6 +174,12 @@ pub(all) struct JiraFieldOption {
 }
 pub impl Show for JiraFieldOption
 
+pub(all) struct JiraFieldPage {
+  items : Array[JiraField]
+  page : PageInfo
+}
+pub impl Show for JiraFieldPage
+
 pub(all) struct JiraIssue {
   key : String
   summary : String
@@ -179,12 +193,24 @@ pub(all) struct JiraIssue {
 pub fn JiraIssue::field_value(Self, IssueField) -> String
 pub impl Show for JiraIssue
 
+pub(all) struct JiraIssuePage {
+  items : Array[JiraIssue]
+  page : PageInfo
+}
+pub impl Show for JiraIssuePage
+
 pub(all) struct JiraProject {
   key : String
   name : String
   project_type : String
 }
 pub impl Show for JiraProject
+
+pub(all) struct JiraProjectPage {
+  items : Array[JiraProject]
+  page : PageInfo
+}
+pub impl Show for JiraProjectPage
 
 pub(all) enum OutputFormat {
   Table
@@ -194,6 +220,25 @@ pub(all) enum OutputFormat {
 pub fn OutputFormat::name(Self) -> String
 pub impl Eq for OutputFormat
 pub impl Show for OutputFormat
+
+pub(all) struct PageInfo {
+  start_at : Int
+  limit : Int
+  returned : Int
+  total : Int
+  fetch_all : Bool
+  is_last : Bool
+}
+pub impl Eq for PageInfo
+pub impl Show for PageInfo
+
+pub(all) struct PageRequest {
+  limit : Int
+  start_at : Int
+  fetch_all : Bool
+}
+pub impl Eq for PageRequest
+pub impl Show for PageRequest
 
 // Type aliases
 

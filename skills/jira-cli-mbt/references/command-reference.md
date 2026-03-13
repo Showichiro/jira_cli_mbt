@@ -32,6 +32,7 @@ jira-cli issue get APP-123 --format tsv
 - Success data is written to stdout.
 - Errors are written to stderr.
 - When `--format json` is requested, stderr errors are also JSON.
+- Paginated read-only JSON responses include `page.start_at`, `page.limit`, `page.returned`, `page.total`, `page.fetch_all`, and `page.is_last`.
 
 Stable exit codes:
 
@@ -78,6 +79,13 @@ List issues for a custom JQL query:
 jira-cli issue list --jql "project = APP AND status = Open ORDER BY priority DESC"
 ```
 
+Control the result window explicitly:
+
+```sh
+jira-cli issue list --limit 5 --start-at 10
+jira-cli issue list --all --format json
+```
+
 Select list columns with `--fields`:
 
 ```sh
@@ -97,12 +105,14 @@ Search requires explicit JQL:
 ```sh
 jira-cli issue search --jql "text ~ \"outage\" AND project = APP"
 jira-cli issue search --jql "text ~ \"outage\" AND project = APP" --format json
+jira-cli issue search --jql "project = APP" --limit 10 --start-at 20
 ```
 
 List projects:
 
 ```sh
 jira-cli project list
+jira-cli project list --limit 20
 jira-cli project list --format json
 ```
 
@@ -110,6 +120,7 @@ List custom fields:
 
 ```sh
 jira-cli field list
+jira-cli field list --limit 50
 jira-cli field list --format json
 ```
 
@@ -185,7 +196,9 @@ jira-cli issue assign --key APP-123 --email user@example.com
 - Read-only commands and `describe` accept `--format table|tsv|json`. In `json` mode, values are not truncated and the response includes a stable `schema_version`.
 - `type`, `issue_type`, and `issuetype` are equivalent field aliases.
 - Duplicate entries in `--fields` are de-duplicated.
-- `issue list`, `issue search`, and their legacy aliases currently request up to 20 results.
+- `issue list`, `issue search`, `project list`, and `field list` accept `--limit`, `--start-at`, and `--all`. `--all` and `--limit` are mutually exclusive.
+- `issue list`, `issue search`, and their legacy aliases return up to 20 results by default.
+- `project list` and `field list` return all visible results by default.
 - Multi-word values are accepted for flags, but quote them in shell commands to avoid accidental word splitting or glob expansion.
 - `--set` only accepts `customfield_*` keys. Duplicate `--set` keys are allowed and the last value wins.
 - If a `--set` value is all digits, the CLI sends `{ "id": "<value>" }` to Jira. Use this for select-like fields when `field get <id> --project <KEY> --type <NAME>` returns option IDs.

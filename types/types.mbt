@@ -185,6 +185,18 @@ pub(all) struct JiraProject {
 } derive(Show)
 
 ///|
+pub(all) struct JiraIssuePage {
+  items : Array[JiraIssue]
+  page : PageInfo
+} derive(Show)
+
+///|
+pub(all) struct JiraProjectPage {
+  items : Array[JiraProject]
+  page : PageInfo
+} derive(Show)
+
+///|
 pub fn default_list_issue_fields() -> Array[IssueField] {
   [Key, IssueType, Status, Priority, Summary]
 }
@@ -197,7 +209,11 @@ pub fn default_detail_issue_fields() -> Array[IssueField] {
 ///|
 pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String)
-  ListIssues(jql~ : String, fields~ : Array[IssueField])
+  ListIssues(
+    jql~ : String,
+    fields~ : Array[IssueField],
+    page_request~ : PageRequest
+  )
   GetIssue(key~ : String, fields~ : Array[IssueField])
   CreateIssue(
     project~ : String,
@@ -219,9 +235,9 @@ pub(all) enum Command {
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
   Assign(key~ : String, email~ : String)
-  Search(jql~ : String)
-  ListProjects
-  ListFields
+  Search(jql~ : String, page_request~ : PageRequest)
+  ListProjects(page_request~ : PageRequest)
+  ListFields(page_request~ : PageRequest)
   GetField(field_id~ : String, project~ : String, issue_type~ : String)
   Help(command_name~ : String)
   Describe(command_name~ : String)
@@ -247,6 +263,12 @@ pub(all) struct JiraField {
   custom : Bool
   schema_type : String
   schema_custom : String
+} derive(Show)
+
+///|
+pub(all) struct JiraFieldPage {
+  items : Array[JiraField]
+  page : PageInfo
 } derive(Show)
 
 ///|

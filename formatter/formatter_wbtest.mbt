@@ -255,7 +255,7 @@ test "format_usage: shows installed binary names" {
       #|  issue            Issue operations
       #|                   issue <subcommand> [options]
       #|  issue list       List assigned issues (default JQL)
-      #|                   issue list [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]
+      #|                   issue list [--jql <jql>] [--fields <field,...>] [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]
       #|  issue get        Get issue details
       #|                   issue get <key> [--fields <field,...>] [--format <table|tsv|json>]
       #|  issue create     Create a new issue
@@ -269,15 +269,15 @@ test "format_usage: shows installed binary names" {
       #|  issue assign     Assign issue to user
       #|                   issue assign --key <key> --email <email>
       #|  issue search     Search issues with JQL
-      #|                   issue search --jql <jql> [--format <table|tsv|json>]
+      #|                   issue search --jql <jql> [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]
       #|  project          Project operations
       #|                   project <subcommand> [options]
       #|  project list     List all projects
-      #|                   project list [--format <table|tsv|json>]
+      #|                   project list [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]
       #|  field            Field operations
       #|                   field <subcommand> [options]
       #|  field list       List custom fields
-      #|                   field list [--format <table|tsv|json>]
+      #|                   field list [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]
       #|  field get        Inspect one custom field
       #|                   field get <customfield_<id>> [--project <key>] [--type <type>] [--format <table|tsv|json>]
       #|  help             Show general help or help for one command
@@ -357,18 +357,28 @@ test "format_command_help: issue get includes output formats and notes" {
 
 ///|
 test "format_issue_list_for_output: json wrapper is stable" {
-  let issues : Array[@types.JiraIssue] = [
-    {
-      key: "PROJ-1",
-      summary: "Fix bug",
-      status: "Open",
-      assignee: "Alice",
-      issue_type: "Bug",
-      priority: "High",
-      description: "Line 1\nLine 2",
-      custom_fields: {},
+  let issues : @types.JiraIssuePage = {
+    items: [
+      {
+        key: "PROJ-1",
+        summary: "Fix bug",
+        status: "Open",
+        assignee: "Alice",
+        issue_type: "Bug",
+        priority: "High",
+        description: "Line 1\nLine 2",
+        custom_fields: {},
+      },
+    ],
+    page: {
+      start_at: 0,
+      limit: 20,
+      returned: 1,
+      total: 3,
+      fetch_all: false,
+      is_last: false,
     },
-  ]
+  }
   inspect(
     format_issue_list_for_output(
       issues,
@@ -376,7 +386,7 @@ test "format_issue_list_for_output: json wrapper is stable" {
       @types.Json,
     ),
     content=(
-      #|{"schema_version":"v1","kind":"issues","fields":["key","type","summary"],"items":[{"key":"PROJ-1","type":"Bug","summary":"Fix bug"}]}
+      #|{"schema_version":"v1","kind":"issues","page":{"start_at":0,"limit":20,"returned":1,"total":3,"fetch_all":false,"is_last":false},"fields":["key","type","summary"],"items":[{"key":"PROJ-1","type":"Bug","summary":"Fix bug"}]}
     ),
   )
 }
@@ -409,32 +419,50 @@ test "format_issue_detail_for_output: tsv is machine readable" {
 
 ///|
 test "format_projects_for_output: json wrapper is stable" {
-  let projects : Array[@types.JiraProject] = [
-    { key: "PROJ", name: "My Project", project_type: "software" },
-  ]
+  let projects : @types.JiraProjectPage = {
+    items: [{ key: "PROJ", name: "My Project", project_type: "software" }],
+    page: {
+      start_at: 2,
+      limit: 1,
+      returned: 1,
+      total: 5,
+      fetch_all: false,
+      is_last: false,
+    },
+  }
   inspect(
     format_projects_for_output(projects, @types.Json),
     content=(
-      #|{"schema_version":"v1","kind":"projects","items":[{"key":"PROJ","name":"My Project","project_type":"software"}]}
+      #|{"schema_version":"v1","kind":"projects","page":{"start_at":2,"limit":1,"returned":1,"total":5,"fetch_all":false,"is_last":false},"items":[{"key":"PROJ","name":"My Project","project_type":"software"}]}
     ),
   )
 }
 
 ///|
 test "format_fields_for_output: json wrapper is stable" {
-  let fields : Array[@types.JiraField] = [
-    {
-      id: "customfield_10001",
-      name: "Team",
-      custom: true,
-      schema_type: "option",
-      schema_custom: "select",
+  let fields : @types.JiraFieldPage = {
+    items: [
+      {
+        id: "customfield_10001",
+        name: "Team",
+        custom: true,
+        schema_type: "option",
+        schema_custom: "select",
+      },
+    ],
+    page: {
+      start_at: 0,
+      limit: 1,
+      returned: 1,
+      total: 2,
+      fetch_all: false,
+      is_last: false,
     },
-  ]
+  }
   inspect(
     format_fields_for_output(fields, @types.Json),
     content=(
-      #|{"schema_version":"v1","kind":"fields","items":[{"id":"customfield_10001","name":"Team","custom":true,"type":"option","custom_type":"select"}]}
+      #|{"schema_version":"v1","kind":"fields","page":{"start_at":0,"limit":1,"returned":1,"total":2,"fetch_all":false,"is_last":false},"items":[{"id":"customfield_10001","name":"Team","custom":true,"type":"option","custom_type":"select"}]}
     ),
   )
 }
