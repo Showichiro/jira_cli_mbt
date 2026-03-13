@@ -193,8 +193,8 @@ fn config_command_spec() -> CommandSpec {
     ],
     output_formats: [],
     notes: [
-      "Resolution order for `jira-cli config`: flag > env > config", "Runtime credential resolution order: env > config",
-      "Configuration is saved to ~/.config/jira_cli_mbt/config.json",
+      "Resolution order for `jira-cli config`: base_url/email use flag > env > config; api_token uses flag > config > env",
+      "Runtime credential resolution order: env > config", "Configuration is saved to ~/.config/jira_cli_mbt/config.json",
     ],
     examples: [
       "jira-cli config --base-url https://your-site.atlassian.net --email you@example.com --api-token <token>",

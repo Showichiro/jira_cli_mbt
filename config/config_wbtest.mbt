@@ -46,7 +46,7 @@ test "resolve_runtime_config_from prefers env over saved config" {
 }
 
 ///|
-test "resolve_config_for_save_from prefers flag over env over config" {
+test "resolve_config_for_save_from keeps saved token ahead of env" {
   let resolved = resolve_config_for_save_from(
     "https://flag.atlassian.net",
     "",
@@ -65,7 +65,28 @@ test "resolve_config_for_save_from prefers flag over env over config" {
   )
   assert_eq(resolved.base_url, "https://flag.atlassian.net")
   assert_eq(resolved.email, "env@example.com")
-  assert_eq(resolved.api_token, "env-token")
+  assert_eq(resolved.api_token, "saved-token")
+}
+
+///|
+test "resolve_config_for_save_from prefers explicit token flag over saved and env" {
+  let resolved = resolve_config_for_save_from(
+    "",
+    "",
+    "flag-token",
+    "",
+    {
+      base_url: "https://env.atlassian.net",
+      email: "env@example.com",
+      api_token: "env-token",
+    },
+    {
+      base_url: "https://saved.atlassian.net",
+      email: "saved@example.com",
+      api_token: "saved-token",
+    },
+  )
+  assert_eq(resolved.api_token, "flag-token")
 }
 
 ///|

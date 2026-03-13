@@ -97,7 +97,9 @@ test "command specs resolve canonical names and aliases" {
     config_spec.flags.any(fn(flag) { flag.name == "--api-token-stdin" }),
   )
   assert_true(
-    config_spec.notes.any(fn(note) { note.contains("flag > env > config") }),
+    config_spec.notes.any(fn(note) {
+      note.contains("api_token uses flag > config > env")
+    }),
   )
 
   let create_spec = @types.require_command_spec("create").unwrap()

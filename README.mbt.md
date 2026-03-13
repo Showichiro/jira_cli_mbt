@@ -95,7 +95,7 @@ The configuration is saved to `~/.config/jira_cli_mbt/config.json`.
 
 Resolution order:
 
-- `jira-cli config`: `flag > env > config`
+- `jira-cli config`: `base_url/email` は `flag > env > config`、`api_token` は `flag > config > env`
 - other Jira commands: `env > config`
 
 Supported environment variables: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`
@@ -149,7 +149,7 @@ printf %s "$JIRA_API_TOKEN" | jira-cli config --base-url https://your-site.atlas
 JIRA_BASE_URL=https://your-site.atlassian.net JIRA_EMAIL=you@example.com JIRA_API_TOKEN=token jira-cli config
 ```
 
-Missing values are resolved with `flag > env > config`, so you can update only one field while reusing the saved config.
+Missing values are resolved with `base_url/email: flag > env > config` and `api_token: flag > config > env`, so saved tokens are not overwritten by env-only values when you re-save config.
 
 Canonical command forms use `noun verb` names such as `issue list` and `field get`. Legacy aliases such as `issues`, `create`, `projects`, and `fields` continue to work during the migration period.
 

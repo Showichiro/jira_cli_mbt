@@ -145,6 +145,11 @@ fn resolve_config_for_save_from(
   env : @types.JiraConfig,
   saved_config : @types.JiraConfig,
 ) -> @types.JiraConfig raise {
+  let token_override = if stdin_token.length() > 0 {
+    stdin_token
+  } else {
+    normalized_config_value(api_token)
+  }
   resolved_config_or_error(
     resolve_config_value(
       normalized_config_value(base_url),
@@ -156,16 +161,8 @@ fn resolve_config_for_save_from(
       env.email,
       saved_config.email,
     ),
-    resolve_config_value(
-      if stdin_token.length() > 0 {
-        stdin_token
-      } else {
-        normalized_config_value(api_token)
-      },
-      env.api_token,
-      saved_config.api_token,
-    ),
-    "flag > env > config",
+    resolve_config_value(token_override, saved_config.api_token, env.api_token),
+    "base_url/email: flag > env > config; api_token: flag > config > env",
   )
 }
 

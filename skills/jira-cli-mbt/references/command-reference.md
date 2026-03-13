@@ -14,7 +14,7 @@ The config file lives at `~/.config/jira_cli_mbt/config.json`.
 
 Resolution order:
 
-- `jira-cli config`: `flag > env > config`
+- `jira-cli config`: `base_url/email` use `flag > env > config`; `api_token` uses `flag > config > env`
 - other Jira commands: `env > config`
 
 Supported env vars: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`
