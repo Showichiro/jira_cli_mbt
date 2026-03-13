@@ -46,6 +46,39 @@ pub fn OutputFormat::name(self : OutputFormat) -> String {
 }
 
 ///|
+pub(all) enum CliErrorCategory {
+  Usage
+  Config
+  Auth
+  NotFound
+  Validation
+  General
+} derive(Show, Eq)
+
+///|
+pub fn CliErrorCategory::name(self : CliErrorCategory) -> String {
+  match self {
+    Usage => "usage"
+    Config => "config"
+    Auth => "auth"
+    NotFound => "not_found"
+    Validation => "validation"
+    General => "general"
+  }
+}
+
+///|
+pub fn CliErrorCategory::exit_code(self : CliErrorCategory) -> Int {
+  match self {
+    Usage => 2
+    Config | Auth => 4
+    NotFound => 3
+    Validation => 5
+    General => 1
+  }
+}
+
+///|
 pub fn parse_issue_field(name : String) -> Result[IssueField, String] {
   let normalized = name.trim().to_string().to_lower()
   match normalized {
@@ -198,6 +231,13 @@ pub(all) struct Invocation {
   command : Command
   output_format : OutputFormat
 } derive(Show)
+
+///|
+pub(all) struct CommandRunResult {
+  stdout : String
+  stderr : String
+  exit_code : Int
+} derive(Show, Eq)
 
 ///|
 pub(all) struct JiraField {

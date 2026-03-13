@@ -32,6 +32,16 @@ test "parse_output_format supports stable names" {
 }
 
 ///|
+test "cli error categories map to stable exit codes" {
+  assert_eq(@types.Usage.exit_code(), 2)
+  assert_eq(@types.CliErrorCategory::Config.exit_code(), 4)
+  assert_eq(@types.Auth.exit_code(), 4)
+  assert_eq(@types.NotFound.exit_code(), 3)
+  assert_eq(@types.Validation.exit_code(), 5)
+  assert_eq(@types.General.exit_code(), 1)
+}
+
+///|
 test "jira issue field_value reads requested field" {
   let issue : @types.JiraIssue = {
     key: "PROJ-1",

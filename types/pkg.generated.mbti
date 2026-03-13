@@ -17,6 +17,19 @@ pub fn parse_output_format(String) -> Result[OutputFormat, String]
 // Errors
 
 // Types and methods
+pub(all) enum CliErrorCategory {
+  Usage
+  Config
+  Auth
+  NotFound
+  Validation
+  General
+}
+pub fn CliErrorCategory::exit_code(Self) -> Int
+pub fn CliErrorCategory::name(Self) -> String
+pub impl Eq for CliErrorCategory
+pub impl Show for CliErrorCategory
+
 pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String)
   ListIssues(jql~ : String, fields~ : Array[IssueField])
@@ -33,6 +46,14 @@ pub(all) enum Command {
   Help
 }
 pub impl Show for Command
+
+pub(all) struct CommandRunResult {
+  stdout : String
+  stderr : String
+  exit_code : Int
+}
+pub impl Eq for CommandRunResult
+pub impl Show for CommandRunResult
 
 pub(all) struct Invocation {
   command : Command

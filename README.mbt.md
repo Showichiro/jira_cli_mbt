@@ -63,6 +63,21 @@ jira-cli issue PROJ-123 --format tsv
 
 Supported read-only commands: `issues`, `issue`, `search`, `projects`, `fields`.
 
+## Exit codes
+
+The CLI now uses stable non-zero exit codes so automation can branch on failures without parsing prose.
+
+| Exit code | Meaning |
+|-----------|---------|
+| `0` | Success |
+| `1` | General failure |
+| `2` | Usage / parse error |
+| `3` | Not found |
+| `4` | Config or authentication error |
+| `5` | Validation / conflict error |
+
+Successful output is written to stdout. Errors are written to stderr. When `--format json` is requested, error output on stderr is also JSON.
+
 ## Configuration
 
 Before using any Jira commands, configure your connection:

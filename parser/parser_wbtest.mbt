@@ -131,3 +131,11 @@ test "parse_request: rejects missing format value" {
     content="Err(\"Missing value for flag: --format\")",
   )
 }
+
+///|
+test "parse_command_line: keeps requested format on parse errors" {
+  inspect(
+    parse_command_line(["issues", "--format", "json", "--fields", "unknown"][:]),
+    content="(Json, Err(\"Unsupported issue field: unknown\"))",
+  )
+}

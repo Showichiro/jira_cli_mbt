@@ -27,13 +27,20 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
 pub fn parse_request(
   args : ArrayView[String],
 ) -> Result[@types.Invocation, String] {
-  match extract_output_format(args) {
+  let (output_format, command) = parse_command_line(args)
+  match command {
+    Ok(command) => Ok({ command, output_format })
     Err(message) => Err(message)
-    Ok((output_format, remaining)) =>
-      match parse_args(remaining[:]) {
-        Ok(command) => Ok({ command, output_format })
-        Err(message) => Err(message)
-      }
+  }
+}
+
+///|
+pub fn parse_command_line(
+  args : ArrayView[String],
+) -> (@types.OutputFormat, Result[@types.Command, String]) {
+  match extract_output_format(args) {
+    Err(message) => (@types.Table, Err(message))
+    Ok((output_format, remaining)) => (output_format, parse_args(remaining[:]))
   }
 }
 
