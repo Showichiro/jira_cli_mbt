@@ -208,11 +208,11 @@ test "requested_api_fields excludes key and dedups aliases" {
 test "build_search_body includes requested fields" {
   inspect(
     @core.json_stringify_pretty(
-      build_search_body("project = TEST", [
-        @types.Key,
-        @types.Summary,
-        @types.Assignee,
-      ]),
+      build_search_body(
+        "project = TEST",
+        [@types.Key, @types.Summary, @types.Assignee],
+        20,
+      ),
       2,
     ),
     content=(
@@ -226,6 +226,33 @@ test "build_search_body includes requested fields" {
       #|}
     ),
   )
+}
+
+///|
+test "slice_items respects limit and start-at" {
+  let items = [1, 2, 3, 4, 5]
+  assert_eq(slice_items(items, @types.limited_page_request(2, start_at=1)), [
+    2, 3,
+  ])
+}
+
+///|
+test "slice_items returns remaining items for fetch_all" {
+  let items = [1, 2, 3, 4, 5]
+  assert_eq(slice_items(items, @types.full_page_request(start_at=3)), [4, 5])
+}
+
+///|
+test "issue_search_page_size uses stable cursor page size when offset exists" {
+  assert_eq(
+    issue_search_page_size(@types.limited_page_request(5, start_at=10)),
+    50,
+  )
+}
+
+///|
+test "issue_search_page_size keeps small single-page requests" {
+  assert_eq(issue_search_page_size(@types.limited_page_request(5)), 5)
 }
 
 ///|

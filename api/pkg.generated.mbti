@@ -16,13 +16,13 @@ pub async fn get_field_detail(@types.JiraConfig, String, String, String) -> @typ
 
 pub async fn get_issue(@types.JiraConfig, String, Array[@types.IssueField]) -> @types.JiraIssue
 
-pub async fn list_fields(@types.JiraConfig) -> Array[@types.JiraField]
+pub async fn list_fields(@types.JiraConfig, @types.PageRequest) -> @types.JiraFieldPage
 
 pub async fn list_issue_types(@types.JiraConfig, String) -> Array[(String, String)]
 
-pub async fn list_issues(@types.JiraConfig, String, Array[@types.IssueField]) -> Array[@types.JiraIssue]
+pub async fn list_issues(@types.JiraConfig, String, Array[@types.IssueField], @types.PageRequest) -> @types.JiraIssuePage
 
-pub async fn list_projects(@types.JiraConfig) -> Array[@types.JiraProject]
+pub async fn list_projects(@types.JiraConfig, @types.PageRequest) -> @types.JiraProjectPage
 
 pub async fn transition_issue(@types.JiraConfig, String, String) -> Unit
 

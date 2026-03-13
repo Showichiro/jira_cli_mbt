@@ -76,7 +76,7 @@ The CLI now uses stable non-zero exit codes so automation can branch on failures
 | `4` | Config or authentication error |
 | `5` | Validation / conflict error |
 
-Successful output is written to stdout. Errors are written to stderr. When `--format json` is requested, error output on stderr is also JSON and includes recovery fields such as `candidates`, `required_args`, and `next_step` when the CLI can suggest a retry.
+Successful output is written to stdout. Errors are written to stderr. When `--format json` is requested, error output on stderr is also JSON and includes recovery fields such as `candidates`, `required_args`, and `next_step` when the CLI can suggest a retry. Paginated read-only JSON responses also include a `page` object with `start_at`, `limit`, `returned`, `total`, `fetch_all`, and `is_last`.
 
 ## Configuration
 
@@ -152,16 +152,20 @@ Subcommands: `list`, `get`, `create`, `update`, `transition`, `comment`, `assign
 List issues matching a JQL query.
 
 ```sh
-jira-cli issue list [--jql <query>] [--fields <field1,field2,...>] [--format <table|tsv|json>]
+jira-cli issue list [--jql <query>] [--fields <field1,field2,...>] [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]
 ```
 
 - `--jql` — JQL query (default: `assignee = currentUser() ORDER BY updated DESC`)
 - `--fields` — Comma-separated list of fields to display (default: `key,type,status,priority,summary`)
+- `--limit` — Maximum number of issues to return (default: `20`)
+- `--start-at` — Zero-based offset
+- `--all` — Return all remaining issues from the offset (cannot be combined with `--limit`)
 
 Example:
 
 ```sh
 jira-cli issue list --jql "project = MYPROJ AND status = Open" --fields key,summary,status
+jira-cli issue list --limit 5 --start-at 10
 jira-cli issue list --format json
 ```
 
@@ -298,15 +302,19 @@ Legacy alias: `jira-cli assign`
 Search for issues using JQL. Returns issue keys and summaries.
 
 ```sh
-jira-cli issue search --jql <query> [--format <table|tsv|json>]
+jira-cli issue search --jql <query> [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]
 ```
 
 - `--jql` — JQL query (required)
+- `--limit` — Maximum number of issues to return (default: `20`)
+- `--start-at` — Zero-based offset
+- `--all` — Return all remaining issues from the offset (cannot be combined with `--limit`)
 
 Example:
 
 ```sh
 jira-cli issue search --jql "text ~ 'performance' AND project = MYPROJ"
+jira-cli issue search --jql "project = MYPROJ" --limit 10 --start-at 20
 jira-cli issue search --jql "text ~ 'performance' AND project = MYPROJ" --format json
 ```
 
@@ -327,12 +335,17 @@ Currently supported subcommand: `list`
 List all accessible Jira projects.
 
 ```sh
-jira-cli project list [--format <table|tsv|json>]
+jira-cli project list [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]
 ```
+
+- `--limit` — Maximum number of projects to return
+- `--start-at` — Zero-based offset
+- `--all` — Return all remaining projects from the offset (cannot be combined with `--limit`, default)
 
 Example:
 
 ```sh
+jira-cli project list --limit 20
 jira-cli project list --format json
 ```
 
@@ -353,12 +366,17 @@ Subcommands: `list`, `get`
 List custom fields.
 
 ```sh
-jira-cli field list [--format <table|tsv|json>]
+jira-cli field list [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]
 ```
+
+- `--limit` — Maximum number of custom fields to return
+- `--start-at` — Zero-based offset
+- `--all` — Return all remaining custom fields from the offset (cannot be combined with `--limit`, default)
 
 Example:
 
 ```sh
+jira-cli field list --limit 50
 jira-cli field list --format json
 ```
 

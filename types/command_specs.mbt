@@ -45,6 +45,45 @@ fn issue_field_alias_note() -> String {
 }
 
 ///|
+fn pagination_limit_flag(default_value : String) -> CommandFlagSpec {
+  {
+    name: "--limit",
+    value_name: "n",
+    description: "Maximum number of items to return",
+    required: false,
+    repeatable: false,
+    default_value,
+    aliases: [],
+  }
+}
+
+///|
+fn pagination_start_at_flag() -> CommandFlagSpec {
+  {
+    name: "--start-at",
+    value_name: "n",
+    description: "Zero-based result offset",
+    required: false,
+    repeatable: false,
+    default_value: "0",
+    aliases: [],
+  }
+}
+
+///|
+fn pagination_all_flag() -> CommandFlagSpec {
+  {
+    name: "--all",
+    value_name: "",
+    description: "Return all remaining items from the offset",
+    required: false,
+    repeatable: false,
+    default_value: "false",
+    aliases: [],
+  }
+}
+
+///|
 fn issue_group_spec() -> CommandSpec {
   {
     name: "issue",
@@ -156,7 +195,7 @@ fn issues_command_spec() -> CommandSpec {
   {
     name: "issue list",
     summary: "List assigned issues (default JQL)",
-    usage: "issue list [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]",
+    usage: "issue list [--jql <jql>] [--fields <field,...>] [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]",
     aliases: ["issues"],
     positionals: [],
     flags: [
@@ -178,11 +217,19 @@ fn issues_command_spec() -> CommandSpec {
         default_value: "key,type,status,priority,summary",
         aliases: [],
       },
+      pagination_limit_flag("20"),
+      pagination_start_at_flag(),
+      pagination_all_flag(),
     ],
     output_formats: global_output_formats(),
-    notes: [issues_field_note(), issue_field_alias_note()],
+    notes: [
+      issues_field_note(),
+      issue_field_alias_note(),
+      "Default result count is 20",
+      "--all cannot be combined with --limit",
+    ],
     examples: [
-      "jira-cli issue list", "jira-cli issue list --jql \"project = APP AND status = Open\" --format json",
+      "jira-cli issue list", "jira-cli issue list --limit 5 --start-at 10", "jira-cli issue list --jql \"project = APP AND status = Open\" --format json",
     ],
   }
 }
@@ -482,7 +529,7 @@ fn search_command_spec() -> CommandSpec {
   {
     name: "issue search",
     summary: "Search issues with JQL",
-    usage: "issue search --jql <jql> [--format <table|tsv|json>]",
+    usage: "issue search --jql <jql> [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]",
     aliases: ["search"],
     positionals: [],
     flags: [
@@ -495,12 +542,17 @@ fn search_command_spec() -> CommandSpec {
         default_value: "",
         aliases: [],
       },
+      pagination_limit_flag("20"),
+      pagination_start_at_flag(),
+      pagination_all_flag(),
     ],
     output_formats: global_output_formats(),
-    notes: ["search requires an explicit JQL query"],
+    notes: [
+      "search requires an explicit JQL query", "Default result count is 20", "--all cannot be combined with --limit",
+    ],
     examples: [
       "jira-cli issue search --jql \"text ~ \\\"outage\\\" AND project = APP\"",
-      "jira-cli issue search --jql \"project = APP\" --format json",
+      "jira-cli issue search --jql \"project = APP\" --limit 10 --start-at 20", "jira-cli issue search --jql \"project = APP\" --format json",
     ],
   }
 }
@@ -510,13 +562,21 @@ fn project_list_command_spec() -> CommandSpec {
   {
     name: "project list",
     summary: "List all projects",
-    usage: "project list [--format <table|tsv|json>]",
+    usage: "project list [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]",
     aliases: ["projects"],
     positionals: [],
-    flags: [],
+    flags: [
+      pagination_limit_flag(""),
+      pagination_start_at_flag(),
+      pagination_all_flag(),
+    ],
     output_formats: global_output_formats(),
-    notes: [],
-    examples: ["jira-cli project list --format json"],
+    notes: [
+      "By default project list returns all visible projects", "--all cannot be combined with --limit",
+    ],
+    examples: [
+      "jira-cli project list --limit 20", "jira-cli project list --format json",
+    ],
   }
 }
 
@@ -525,13 +585,22 @@ fn field_list_command_spec() -> CommandSpec {
   {
     name: "field list",
     summary: "List custom fields",
-    usage: "field list [--format <table|tsv|json>]",
+    usage: "field list [--limit <n>] [--start-at <n>] [--all] [--format <table|tsv|json>]",
     aliases: ["fields"],
     positionals: [],
-    flags: [],
+    flags: [
+      pagination_limit_flag(""),
+      pagination_start_at_flag(),
+      pagination_all_flag(),
+    ],
     output_formats: global_output_formats(),
-    notes: ["Use `field get` to inspect one custom field"],
-    examples: ["jira-cli field list --format json"],
+    notes: [
+      "By default field list returns all custom fields", "Use `field get` to inspect one custom field",
+      "--all cannot be combined with --limit",
+    ],
+    examples: [
+      "jira-cli field list --limit 50", "jira-cli field list --format json",
+    ],
   }
 }
 

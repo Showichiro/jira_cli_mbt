@@ -79,7 +79,7 @@ test "parse_args: describe requires one command name" {
 test "parse_args: issue list with default jql" {
   inspect(
     @parser.parse_args(["issue", "list"][:]),
-    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary]))",
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary], page_request={limit: 20, start_at: 0, fetch_all: false}))",
   )
 }
 
@@ -87,7 +87,7 @@ test "parse_args: issue list with default jql" {
 test "parse_args: legacy issues alias with default jql" {
   inspect(
     @parser.parse_args(["issues"][:]),
-    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary]))",
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary], page_request={limit: 20, start_at: 0, fetch_all: false}))",
   )
 }
 
@@ -95,7 +95,7 @@ test "parse_args: legacy issues alias with default jql" {
 test "parse_args: list issues with custom jql" {
   inspect(
     @parser.parse_args(["issues", "--jql", "project = TEST"][:]),
-    content="Ok(ListIssues(jql=\"project = TEST\", fields=[Key, IssueType, Status, Priority, Summary]))",
+    content="Ok(ListIssues(jql=\"project = TEST\", fields=[Key, IssueType, Status, Priority, Summary], page_request={limit: 20, start_at: 0, fetch_all: false}))",
   )
 }
 
@@ -103,7 +103,7 @@ test "parse_args: list issues with custom jql" {
 test "parse_args: list issues with custom fields" {
   inspect(
     @parser.parse_args(["issues", "--fields", "key,assignee,summary"][:]),
-    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, Assignee, Summary]))",
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, Assignee, Summary], page_request={limit: 20, start_at: 0, fetch_all: false}))",
   )
 }
 
@@ -111,7 +111,23 @@ test "parse_args: list issues with custom fields" {
 test "parse_args: list issues with custom jira field" {
   inspect(
     @parser.parse_args(["issues", "--fields", "key,customfield_12345"][:]),
-    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, Custom(\"customfield_12345\")]))",
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, Custom(\"customfield_12345\")], page_request={limit: 20, start_at: 0, fetch_all: false}))",
+  )
+}
+
+///|
+test "parse_args: issue list with limit and start-at" {
+  inspect(
+    @parser.parse_args(["issue", "list", "--limit", "5", "--start-at", "10"][:]),
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary], page_request={limit: 5, start_at: 10, fetch_all: false}))",
+  )
+}
+
+///|
+test "parse_args: issue list with --all" {
+  inspect(
+    @parser.parse_args(["issue", "list", "--all"][:]),
+    content="Ok(ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary], page_request={limit: 0, start_at: 0, fetch_all: true}))",
   )
 }
 
@@ -368,7 +384,7 @@ test "parse_args: assign" {
 test "parse_args: search" {
   inspect(
     @parser.parse_args(["search", "--jql", "status = Open"][:]),
-    content="Ok(Search(jql=\"status = Open\"))",
+    content="Ok(Search(jql=\"status = Open\", page_request={limit: 20, start_at: 0, fetch_all: false}))",
   )
 }
 
@@ -376,7 +392,7 @@ test "parse_args: search" {
 test "parse_args: noun-verb issue search" {
   inspect(
     @parser.parse_args(["issue", "search", "--jql", "status = Open"][:]),
-    content="Ok(Search(jql=\"status = Open\"))",
+    content="Ok(Search(jql=\"status = Open\", page_request={limit: 20, start_at: 0, fetch_all: false}))",
   )
 }
 
@@ -384,13 +400,32 @@ test "parse_args: noun-verb issue search" {
 test "parse_args: noun-verb project list" {
   inspect(
     @parser.parse_args(["project", "list"][:]),
-    content="Ok(ListProjects)",
+    content="Ok(ListProjects(page_request={limit: 0, start_at: 0, fetch_all: true}))",
   )
 }
 
 ///|
 test "parse_args: legacy projects alias" {
-  inspect(@parser.parse_args(["projects"][:]), content="Ok(ListProjects)")
+  inspect(
+    @parser.parse_args(["projects"][:]),
+    content="Ok(ListProjects(page_request={limit: 0, start_at: 0, fetch_all: true}))",
+  )
+}
+
+///|
+test "parse_args: project list with limit" {
+  inspect(
+    @parser.parse_args(["project", "list", "--limit", "2"][:]),
+    content="Ok(ListProjects(page_request={limit: 2, start_at: 0, fetch_all: false}))",
+  )
+}
+
+///|
+test "parse_args: project list rejects --all with --limit" {
+  inspect(
+    @parser.parse_args(["project", "list", "--all", "--limit", "2"][:]),
+    content="Err(\"--all cannot be combined with --limit\\nUsage: project list [--limit <n>] [--start-at <n>] [--all]\")",
+  )
 }
 
 ///|

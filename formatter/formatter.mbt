@@ -88,6 +88,18 @@ fn json_envelope(
 }
 
 ///|
+fn page_info_json(page : @types.PageInfo) -> String {
+  json_object([
+    ("start_at", json_int(page.start_at)),
+    ("limit", json_int(page.limit)),
+    ("returned", json_int(page.returned)),
+    ("total", json_int(page.total)),
+    ("fetch_all", json_bool(page.fetch_all)),
+    ("is_last", json_bool(page.is_last)),
+  ])
+}
+
+///|
 fn issue_field_name(field : @types.IssueField) -> String {
   match field {
     @types.Key => "key"
@@ -198,32 +210,36 @@ fn format_issue_list_tsv(
 
 ///|
 fn format_issue_list_json(
-  issues : Array[@types.JiraIssue],
+  issue_page : @types.JiraIssuePage,
   fields : Array[@types.IssueField],
   kind : String,
 ) -> String {
   json_object([
     ("schema_version", json_string("v1")),
     ("kind", json_string(kind)),
+    ("page", page_info_json(issue_page.page)),
     (
       "fields",
       json_array(fields.map(fn(field) { json_string(issue_field_name(field)) })),
     ),
-    ("items", json_array(issues.map(fn(issue) { issue_json(issue, fields) }))),
+    (
+      "items",
+      json_array(issue_page.items.map(fn(issue) { issue_json(issue, fields) })),
+    ),
   ])
 }
 
 ///|
 pub fn format_issue_list_for_output(
-  issues : Array[@types.JiraIssue],
+  issue_page : @types.JiraIssuePage,
   fields : Array[@types.IssueField],
   output_format : @types.OutputFormat,
   kind? : String = "issues",
 ) -> String {
   match output_format {
-    @types.Table => format_issue_list(issues, fields)
-    @types.Tsv => format_issue_list_tsv(issues, fields)
-    @types.Json => format_issue_list_json(issues, fields, kind)
+    @types.Table => format_issue_list(issue_page.items, fields)
+    @types.Tsv => format_issue_list_tsv(issue_page.items, fields)
+    @types.Json => format_issue_list_json(issue_page, fields, kind)
   }
 }
 
@@ -316,19 +332,24 @@ fn format_projects_tsv(projects : Array[@types.JiraProject]) -> String {
 }
 
 ///|
-fn format_projects_json(projects : Array[@types.JiraProject]) -> String {
-  json_envelope("projects", "items", json_array(projects.map(project_json)))
+fn format_projects_json(project_page : @types.JiraProjectPage) -> String {
+  json_object([
+    ("schema_version", json_string("v1")),
+    ("kind", json_string("projects")),
+    ("page", page_info_json(project_page.page)),
+    ("items", json_array(project_page.items.map(project_json))),
+  ])
 }
 
 ///|
 pub fn format_projects_for_output(
-  projects : Array[@types.JiraProject],
+  project_page : @types.JiraProjectPage,
   output_format : @types.OutputFormat,
 ) -> String {
   match output_format {
-    @types.Table => format_projects(projects)
-    @types.Tsv => format_projects_tsv(projects)
-    @types.Json => format_projects_json(projects)
+    @types.Table => format_projects(project_page.items)
+    @types.Tsv => format_projects_tsv(project_page.items)
+    @types.Json => format_projects_json(project_page)
   }
 }
 
@@ -357,19 +378,24 @@ fn format_fields_tsv(fields : Array[@types.JiraField]) -> String {
 }
 
 ///|
-fn format_fields_json(fields : Array[@types.JiraField]) -> String {
-  json_envelope("fields", "items", json_array(fields.map(field_json)))
+fn format_fields_json(field_page : @types.JiraFieldPage) -> String {
+  json_object([
+    ("schema_version", json_string("v1")),
+    ("kind", json_string("fields")),
+    ("page", page_info_json(field_page.page)),
+    ("items", json_array(field_page.items.map(field_json))),
+  ])
 }
 
 ///|
 pub fn format_fields_for_output(
-  fields : Array[@types.JiraField],
+  field_page : @types.JiraFieldPage,
   output_format : @types.OutputFormat,
 ) -> String {
   match output_format {
-    @types.Table => format_fields(fields)
-    @types.Tsv => format_fields_tsv(fields)
-    @types.Json => format_fields_json(fields)
+    @types.Table => format_fields(field_page.items)
+    @types.Tsv => format_fields_tsv(field_page.items)
+    @types.Json => format_fields_json(field_page)
   }
 }
 
@@ -614,6 +640,15 @@ fn format_names(values : Array[String]) -> String {
 }
 
 ///|
+fn flag_value_display(flag : @types.CommandFlagSpec) -> String {
+  if flag.value_name.length() == 0 {
+    ""
+  } else {
+    "<" + flag.value_name + ">"
+  }
+}
+
+///|
 fn format_output_formats(formats : Array[@types.OutputFormat]) -> String {
   format_names(formats.map(fn(format) { format.name() }))
 }
@@ -756,7 +791,7 @@ pub fn format_command_help(spec : @types.CommandSpec) -> String {
     let rows = spec.flags.map(fn(flag) {
       [
         flag.name,
-        "<" + flag.value_name + ">",
+        flag_value_display(flag),
         yes_no(flag.required),
         yes_no(flag.repeatable),
         truncate(default_label(flag.default_value), 28),

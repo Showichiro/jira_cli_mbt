@@ -55,12 +55,26 @@ test "parse_issue_fields: accepts custom jira fields" {
 
 ///|
 test "parse_args: fields list" {
-  inspect(parse_args(["fields"][:]), content="Ok(ListFields)")
+  inspect(
+    parse_args(["fields"][:]),
+    content="Ok(ListFields(page_request={limit: 0, start_at: 0, fetch_all: true}))",
+  )
 }
 
 ///|
 test "parse_args: noun-verb field list" {
-  inspect(parse_args(["field", "list"][:]), content="Ok(ListFields)")
+  inspect(
+    parse_args(["field", "list"][:]),
+    content="Ok(ListFields(page_request={limit: 0, start_at: 0, fetch_all: true}))",
+  )
+}
+
+///|
+test "parse_args: legacy fields alias with limit" {
+  inspect(
+    parse_args(["fields", "--limit", "2"][:]),
+    content="Ok(ListFields(page_request={limit: 2, start_at: 0, fetch_all: false}))",
+  )
 }
 
 ///|
@@ -133,7 +147,7 @@ test "extract_output_format: strips flag before command parsing" {
 test "parse_request: supports format after command" {
   inspect(
     parse_request(["issue", "list", "--format", "tsv"][:]),
-    content="Ok({command: ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary]), output_format: Tsv})",
+    content="Ok({command: ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary], page_request={limit: 20, start_at: 0, fetch_all: false}), output_format: Tsv})",
   )
 }
 
