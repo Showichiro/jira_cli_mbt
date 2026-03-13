@@ -48,6 +48,21 @@ Or via `moon run` during development:
 moon run --target js cmd/main -- <command> [options]
 ```
 
+## Output formats
+
+Read-only commands support a global `--format` option:
+
+```sh
+jira-cli --format json issues
+jira-cli issue PROJ-123 --format tsv
+```
+
+- `table` — human-friendly default
+- `tsv` — tab-separated rows for shell pipelines
+- `json` — stable machine-readable output for agents and automation
+
+Supported read-only commands: `issues`, `issue`, `search`, `projects`, `fields`.
+
 ## Configuration
 
 Before using any Jira commands, configure your connection:
@@ -89,7 +104,7 @@ All three flags are required.
 List issues matching a JQL query.
 
 ```sh
-jira-cli issues [--jql <query>] [--fields <field1,field2,...>]
+jira-cli issues [--jql <query>] [--fields <field1,field2,...>] [--format <table|tsv|json>]
 ```
 
 - `--jql` — JQL query (default: `assignee = currentUser() ORDER BY updated DESC`)
@@ -99,6 +114,7 @@ Example:
 
 ```sh
 jira-cli issues --jql "project = MYPROJ AND status = Open" --fields key,summary,status
+jira-cli issues --format json
 ```
 
 ### issue
@@ -106,7 +122,7 @@ jira-cli issues --jql "project = MYPROJ AND status = Open" --fields key,summary,
 Show details of a single issue.
 
 ```sh
-jira-cli issue <key> [--fields <field1,field2,...>]
+jira-cli issue <key> [--fields <field1,field2,...>] [--format <table|tsv|json>]
 ```
 
 - `<key>` — Issue key (e.g. `PROJ-123`)
@@ -116,6 +132,7 @@ Example:
 
 ```sh
 jira-cli issue PROJ-123
+jira-cli issue PROJ-123 --format json
 ```
 
 ### create
@@ -219,7 +236,7 @@ jira-cli assign --key PROJ-123 --email alice@example.com
 Search for issues using JQL. Returns issue keys and summaries.
 
 ```sh
-jira-cli search --jql <query>
+jira-cli search --jql <query> [--format <table|tsv|json>]
 ```
 
 - `--jql` — JQL query (required)
@@ -228,6 +245,7 @@ Example:
 
 ```sh
 jira-cli search --jql "text ~ 'performance' AND project = MYPROJ"
+jira-cli search --jql "text ~ 'performance' AND project = MYPROJ" --format json
 ```
 
 ### projects
@@ -235,7 +253,30 @@ jira-cli search --jql "text ~ 'performance' AND project = MYPROJ"
 List all accessible Jira projects.
 
 ```sh
-jira-cli projects
+jira-cli projects [--format <table|tsv|json>]
+```
+
+Example:
+
+```sh
+jira-cli projects --format json
+```
+
+### fields
+
+List custom fields or inspect one field in detail.
+
+```sh
+jira-cli fields [--format <table|tsv|json>]
+jira-cli fields <customfield_id> [--project <key>] [--type <name>] [--format <table|tsv|json>]
+```
+
+Examples:
+
+```sh
+jira-cli fields --format json
+jira-cli fields customfield_10001 --format json
+jira-cli fields customfield_10001 --project APP --type Bug --format json
 ```
 
 ## Available Fields

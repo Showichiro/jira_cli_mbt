@@ -246,6 +246,9 @@ test "format_usage: shows installed binary names" {
       #|Usage: jira-cli <command> [options]
       #|Alias: jira-cli-mbt <command> [options]
       #|
+      #|Global options:
+      #|  --format    table | tsv | json (read-only commands, default: table)
+      #|
       #|Commands:
       #|  config      Set Jira configuration
       #|              --base-url <url> --email <email> --api-token <token>
@@ -270,6 +273,124 @@ test "format_usage: shows installed binary names" {
       #|              [customfield_XXXXX]  Show field details and options
       #|  projects    List all projects
       #|  help        Show this help message
+    ),
+  )
+}
+
+///|
+test "format_issue_list_for_output: json wrapper is stable" {
+  let issues : Array[@types.JiraIssue] = [
+    {
+      key: "PROJ-1",
+      summary: "Fix bug",
+      status: "Open",
+      assignee: "Alice",
+      issue_type: "Bug",
+      priority: "High",
+      description: "Line 1\nLine 2",
+      custom_fields: {},
+    },
+  ]
+  inspect(
+    format_issue_list_for_output(
+      issues,
+      [@types.Key, @types.IssueType, @types.Summary],
+      @types.Json,
+    ),
+    content=(
+      #|{"schema_version":"v1","kind":"issues","fields":["key","type","summary"],"items":[{"key":"PROJ-1","type":"Bug","summary":"Fix bug"}]}
+    ),
+  )
+}
+
+///|
+test "format_issue_detail_for_output: tsv is machine readable" {
+  let issue : @types.JiraIssue = {
+    key: "PROJ-1",
+    summary: "Fix bug",
+    status: "Open",
+    assignee: "Alice",
+    issue_type: "Bug",
+    priority: "High",
+    description: "Line 1\nLine 2",
+    custom_fields: {},
+  }
+  inspect(
+    format_issue_detail_for_output(
+      issue,
+      [@types.Key, @types.Description],
+      @types.Tsv,
+    ),
+    content=(
+      #|field	value
+      #|key	PROJ-1
+      #|description	Line 1 Line 2
+    ),
+  )
+}
+
+///|
+test "format_projects_for_output: json wrapper is stable" {
+  let projects : Array[@types.JiraProject] = [
+    { key: "PROJ", name: "My Project", project_type: "software" },
+  ]
+  inspect(
+    format_projects_for_output(projects, @types.Json),
+    content=(
+      #|{"schema_version":"v1","kind":"projects","items":[{"key":"PROJ","name":"My Project","project_type":"software"}]}
+    ),
+  )
+}
+
+///|
+test "format_fields_for_output: json wrapper is stable" {
+  let fields : Array[@types.JiraField] = [
+    {
+      id: "customfield_10001",
+      name: "Team",
+      custom: true,
+      schema_type: "option",
+      schema_custom: "select",
+    },
+  ]
+  inspect(
+    format_fields_for_output(fields, @types.Json),
+    content=(
+      #|{"schema_version":"v1","kind":"fields","items":[{"id":"customfield_10001","name":"Team","custom":true,"type":"option","custom_type":"select"}]}
+    ),
+  )
+}
+
+///|
+test "format_field_detail_for_output: json wrapper includes options" {
+  let detail : @types.JiraFieldDetail = {
+    field: {
+      id: "customfield_10001",
+      name: "Team",
+      custom: true,
+      schema_type: "option",
+      schema_custom: "select",
+    },
+    options: [{ id: "1", value: "Frontend" }, { id: "2", value: "Backend" }],
+  }
+  inspect(
+    format_field_detail_for_output(detail, @types.Json),
+    content=(
+      #|{"schema_version":"v1","kind":"field_detail","item":{"field":{"id":"customfield_10001","name":"Team","custom":true,"type":"option","custom_type":"select"},"options":[{"id":"1","value":"Frontend"},{"id":"2","value":"Backend"}]}}
+    ),
+  )
+}
+
+///|
+test "format_issue_types_for_output: json wrapper lists choices" {
+  inspect(
+    format_issue_types_for_output(
+      "APP",
+      [("10001", "Task"), ("10002", "Bug")],
+      @types.Json,
+    ),
+    content=(
+      #|{"schema_version":"v1","kind":"issue_types","project":"APP","items":[{"id":"10001","name":"Task"},{"id":"10002","name":"Bug"}]}
     ),
   )
 }

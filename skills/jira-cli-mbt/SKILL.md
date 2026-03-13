@@ -15,12 +15,14 @@ Treat `issues`, `issue`, `search`, `projects`, and `fields` as read-only discove
 
 1. Resolve the executable path before issuing commands. Prefer an installed binary over `node dist/cli.mjs`, and prefer `node dist/cli.mjs` over `moon run`.
 2. Reuse existing config when possible. The CLI stores credentials in `~/.config/jira_cli_mbt/config.json`. Do not overwrite it unless the user asked to reconfigure Jira access.
-3. Before `create` or `update --set`, discover metadata first with `projects`, `fields`, and `fields <customfield_id> --project <KEY> --type <NAME>`.
-4. After a mutating command, verify the result with `issue <KEY>` or a focused `issues --jql "key = KEY"` query.
+3. For read-only discovery commands, prefer `--format json` so downstream steps can consume stable machine-readable output.
+4. Before `create` or `update --set`, discover metadata first with `projects`, `fields`, and `fields <customfield_id> --project <KEY> --type <NAME>`.
+5. After a mutating command, verify the result with `issue <KEY>` or a focused `issues --jql "key = KEY"` query.
 
 ## Guardrails
 
 - Use the actual executable names `jira-cli` or `jira-cli-mbt` in commands.
+- Read-only commands support `--format table|tsv|json`; use `json` by default for agent workflows unless a human explicitly wants table output.
 - `issues` defaults to `assignee = currentUser() ORDER BY updated DESC`.
 - `search` requires `--jql` and uses the same list formatter as `issues`.
 - `fields` lists only custom fields, not standard Jira fields.

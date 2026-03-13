@@ -21,6 +21,17 @@ test "default issue field sets stay stable" {
 }
 
 ///|
+test "parse_output_format supports stable names" {
+  inspect(@types.parse_output_format("table"), content="Ok(Table)")
+  inspect(@types.parse_output_format("tsv"), content="Ok(Tsv)")
+  inspect(@types.parse_output_format("json"), content="Ok(Json)")
+  inspect(
+    @types.parse_output_format("yaml"),
+    content="Err(\"Unsupported output format: yaml\")",
+  )
+}
+
+///|
 test "jira issue field_value reads requested field" {
   let issue : @types.JiraIssue = {
     key: "PROJ-1",

@@ -8,7 +8,11 @@ import {
 // Values
 pub async fn execute(Result[@types.Command, String]) -> String
 
+pub async fn execute_request(Result[@types.Invocation, String]) -> String
+
 pub fn parse_args(ArrayView[String]) -> Result[@types.Command, String]
+
+pub fn parse_request(ArrayView[String]) -> Result[@types.Invocation, String]
 
 // Errors
 

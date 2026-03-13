@@ -24,6 +24,45 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
 }
 
 ///|
+pub fn parse_request(
+  args : ArrayView[String],
+) -> Result[@types.Invocation, String] {
+  match extract_output_format(args) {
+    Err(message) => Err(message)
+    Ok((output_format, remaining)) =>
+      match parse_args(remaining[:]) {
+        Ok(command) => Ok({ command, output_format })
+        Err(message) => Err(message)
+      }
+  }
+}
+
+///|
+fn extract_output_format(
+  args : ArrayView[String],
+) -> Result[(@types.OutputFormat, Array[String]), String] {
+  let remaining : Array[String] = []
+  let mut output_format = @types.Table
+  let mut i = 0
+  while i < args.length() {
+    if args[i] == "--format" {
+      guard i + 1 < args.length() && not(args[i + 1].has_prefix("--")) else {
+        return Err("Missing value for flag: --format")
+      }
+      match @types.parse_output_format(args[i + 1]) {
+        Ok(format) => output_format = format
+        Err(message) => return Err(message)
+      }
+      i = i + 2
+    } else {
+      remaining.push(args[i])
+      i = i + 1
+    }
+  }
+  Ok((output_format, remaining))
+}
+
+///|
 fn collect_value(
   flag : String,
   args : ArrayView[String],

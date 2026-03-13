@@ -12,12 +12,28 @@ jira-cli config --base-url https://your-site.atlassian.net --email you@example.c
 
 The config file lives at `~/.config/jira_cli_mbt/config.json`.
 
+## Output formats
+
+Read-only commands support a global `--format table|tsv|json` option.
+
+- `table`: default human-readable output
+- `tsv`: tab-separated output for shell pipelines
+- `json`: stable machine-readable output intended for agents and automation
+
+Examples:
+
+```sh
+jira-cli --format json issues
+jira-cli issue APP-123 --format tsv
+```
+
 ## Read-Only Commands
 
 List the current user's recently updated issues:
 
 ```sh
 jira-cli issues
+jira-cli issues --format json
 ```
 
 List issues for a custom JQL query:
@@ -37,36 +53,42 @@ Get one issue:
 ```sh
 jira-cli issue APP-123
 jira-cli issue APP-123 --fields key,status,assignee,summary,description
+jira-cli issue APP-123 --format json
 ```
 
 Search requires explicit JQL:
 
 ```sh
 jira-cli search --jql "text ~ \"outage\" AND project = APP"
+jira-cli search --jql "text ~ \"outage\" AND project = APP" --format json
 ```
 
 List projects:
 
 ```sh
 jira-cli projects
+jira-cli projects --format json
 ```
 
 List custom fields:
 
 ```sh
 jira-cli fields
+jira-cli fields --format json
 ```
 
 Inspect a custom field:
 
 ```sh
 jira-cli fields customfield_10001
+jira-cli fields customfield_10001 --format json
 ```
 
 Inspect a custom field for a project and issue type so the CLI can show allowed options:
 
 ```sh
 jira-cli fields customfield_10001 --project APP --type Bug
+jira-cli fields customfield_10001 --project APP --type Bug --format json
 ```
 
 If the project is known but the issue type is not, call:
@@ -124,6 +146,7 @@ jira-cli assign --key APP-123 --email user@example.com
 ## Option Behavior
 
 - `issue` and `issues` accept `key`, `summary`, `status`, `assignee`, `type`, `priority`, `description`, and `customfield_<id>` in `--fields`.
+- Read-only commands accept `--format table|tsv|json`. In `json` mode, values are not truncated and the response includes a stable `schema_version`.
 - `type`, `issue_type`, and `issuetype` are equivalent field aliases.
 - Duplicate entries in `--fields` are de-duplicated.
 - `issues` and `search` currently request up to 20 results.

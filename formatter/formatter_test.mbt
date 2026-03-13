@@ -1,6 +1,7 @@
 ///|
 test "format_usage: contains all commands" {
   let usage = @formatter.format_usage()
+  assert_true(usage.contains("--format"))
   assert_true(usage.contains("issues"))
   assert_true(usage.contains("config"))
   assert_true(usage.contains("search"))
