@@ -53,15 +53,15 @@ moon run --target js cmd/main -- <command> [options]
 Read-only commands and `describe` support a global `--format` option:
 
 ```sh
-jira-cli --format json issues
-jira-cli issue PROJ-123 --format tsv
+jira-cli --format json issue list
+jira-cli issue get PROJ-123 --format tsv
 ```
 
 - `table` — human-friendly default
 - `tsv` — tab-separated rows for shell pipelines
 - `json` — stable machine-readable output for agents and automation
 
-Supported commands: `issues`, `issue`, `search`, `projects`, `fields`, `describe`.
+Supported commands: `issue list`, `issue get`, `issue search`, `project list`, `field list`, `field get`, `describe`.
 
 ## Exit codes
 
@@ -101,7 +101,9 @@ Show general help or help for one command.
 ```sh
 jira-cli help
 jira-cli help issue
+jira-cli help issue get
 jira-cli issue --help
+jira-cli issue get --help
 jira-cli --help
 jira-cli -h
 ```
@@ -111,16 +113,16 @@ jira-cli -h
 Return the CLI's self-description for one command.
 
 ```sh
-jira-cli describe <command> [--format <table|tsv|json>]
+jira-cli describe <command...> [--format <table|tsv|json>]
 ```
 
-- `<command>` — Command name to describe
+- `<command>` — Command name or noun-verb path to describe
 - `--format` — Output format (default: `table`; use `json` for automation)
 
 Example:
 
 ```sh
-jira-cli describe issue --format json
+jira-cli describe issue get --format json
 ```
 
 ### config
@@ -133,12 +135,24 @@ jira-cli config --base-url <url> --email <email> --api-token <token>
 
 All three flags are required.
 
-### issues
+Canonical command forms use `noun verb` names such as `issue list` and `field get`. Legacy aliases such as `issues`, `create`, `projects`, and `fields` continue to work during the migration period.
+
+### issue
+
+Issue operations are grouped under `issue`:
+
+```sh
+jira-cli issue <subcommand> [options]
+```
+
+Subcommands: `list`, `get`, `create`, `update`, `transition`, `comment`, `assign`, `search`
+
+### issue list
 
 List issues matching a JQL query.
 
 ```sh
-jira-cli issues [--jql <query>] [--fields <field1,field2,...>] [--format <table|tsv|json>]
+jira-cli issue list [--jql <query>] [--fields <field1,field2,...>] [--format <table|tsv|json>]
 ```
 
 - `--jql` — JQL query (default: `assignee = currentUser() ORDER BY updated DESC`)
@@ -147,16 +161,18 @@ jira-cli issues [--jql <query>] [--fields <field1,field2,...>] [--format <table|
 Example:
 
 ```sh
-jira-cli issues --jql "project = MYPROJ AND status = Open" --fields key,summary,status
-jira-cli issues --format json
+jira-cli issue list --jql "project = MYPROJ AND status = Open" --fields key,summary,status
+jira-cli issue list --format json
 ```
 
-### issue
+Legacy alias: `jira-cli issues`
+
+### issue get
 
 Show details of a single issue.
 
 ```sh
-jira-cli issue <key> [--fields <field1,field2,...>] [--format <table|tsv|json>]
+jira-cli issue get <key> [--fields <field1,field2,...>] [--format <table|tsv|json>]
 ```
 
 - `<key>` — Issue key (e.g. `PROJ-123`)
@@ -165,16 +181,18 @@ jira-cli issue <key> [--fields <field1,field2,...>] [--format <table|tsv|json>]
 Example:
 
 ```sh
-jira-cli issue PROJ-123
-jira-cli issue PROJ-123 --format json
+jira-cli issue get PROJ-123
+jira-cli issue get PROJ-123 --format json
 ```
 
-### create
+Legacy alias: `jira-cli issue PROJ-123`
+
+### issue create
 
 Create a new issue.
 
 ```sh
-jira-cli create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
+jira-cli issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
 ```
 
 - `--project` — Project key (required)
@@ -186,15 +204,17 @@ jira-cli create --project <key> --summary <text> [--type <type>] [--description 
 Example:
 
 ```sh
-jira-cli create --project MYPROJ --summary "Fix login bug" --type Bug --description "Login fails on Safari"
+jira-cli issue create --project MYPROJ --summary "Fix login bug" --type Bug --description "Login fails on Safari"
 ```
 
-### update
+Legacy alias: `jira-cli create`
+
+### issue update
 
 Update an existing issue.
 
 ```sh
-jira-cli update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
+jira-cli issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
 ```
 
 - `<key>` — Issue key (required)
@@ -211,15 +231,17 @@ At least one field must be specified.
 Example:
 
 ```sh
-jira-cli update PROJ-123 --priority High --labels "backend,urgent"
+jira-cli issue update PROJ-123 --priority High --labels "backend,urgent"
 ```
 
-### transition
+Legacy alias: `jira-cli update`
+
+### issue transition
 
 Change the status of an issue.
 
 ```sh
-jira-cli transition --key <key> --status <status>
+jira-cli issue transition --key <key> --status <status>
 ```
 
 - `--key` — Issue key (required)
@@ -228,15 +250,17 @@ jira-cli transition --key <key> --status <status>
 Example:
 
 ```sh
-jira-cli transition --key PROJ-123 --status "In Progress"
+jira-cli issue transition --key PROJ-123 --status "In Progress"
 ```
 
-### comment
+Legacy alias: `jira-cli transition`
+
+### issue comment
 
 Add a comment to an issue.
 
 ```sh
-jira-cli comment --key <key> --text <text>
+jira-cli issue comment --key <key> --text <text>
 ```
 
 - `--key` — Issue key (required)
@@ -245,15 +269,17 @@ jira-cli comment --key <key> --text <text>
 Example:
 
 ```sh
-jira-cli comment --key PROJ-123 --text "Investigating the root cause"
+jira-cli issue comment --key PROJ-123 --text "Investigating the root cause"
 ```
 
-### assign
+Legacy alias: `jira-cli comment`
+
+### issue assign
 
 Assign an issue to a user.
 
 ```sh
-jira-cli assign --key <key> --email <email>
+jira-cli issue assign --key <key> --email <email>
 ```
 
 - `--key` — Issue key (required)
@@ -262,15 +288,17 @@ jira-cli assign --key <key> --email <email>
 Example:
 
 ```sh
-jira-cli assign --key PROJ-123 --email alice@example.com
+jira-cli issue assign --key PROJ-123 --email alice@example.com
 ```
 
-### search
+Legacy alias: `jira-cli assign`
+
+### issue search
 
 Search for issues using JQL. Returns issue keys and summaries.
 
 ```sh
-jira-cli search --jql <query> [--format <table|tsv|json>]
+jira-cli issue search --jql <query> [--format <table|tsv|json>]
 ```
 
 - `--jql` — JQL query (required)
@@ -278,39 +306,80 @@ jira-cli search --jql <query> [--format <table|tsv|json>]
 Example:
 
 ```sh
-jira-cli search --jql "text ~ 'performance' AND project = MYPROJ"
-jira-cli search --jql "text ~ 'performance' AND project = MYPROJ" --format json
+jira-cli issue search --jql "text ~ 'performance' AND project = MYPROJ"
+jira-cli issue search --jql "text ~ 'performance' AND project = MYPROJ" --format json
 ```
 
-### projects
+Legacy alias: `jira-cli search`
+
+### project
+
+Project operations are grouped under `project`:
+
+```sh
+jira-cli project <subcommand> [options]
+```
+
+Currently supported subcommand: `list`
+
+### project list
 
 List all accessible Jira projects.
 
 ```sh
-jira-cli projects [--format <table|tsv|json>]
+jira-cli project list [--format <table|tsv|json>]
 ```
 
 Example:
 
 ```sh
-jira-cli projects --format json
+jira-cli project list --format json
 ```
 
-### fields
+Legacy alias: `jira-cli projects`
 
-List custom fields or inspect one field in detail.
+### field
+
+Field operations are grouped under `field`:
 
 ```sh
-jira-cli fields [customfield_<id>] [--project <key>] [--type <name>] [--format <table|tsv|json>]
+jira-cli field <subcommand> [options]
+```
+
+Subcommands: `list`, `get`
+
+### field list
+
+List custom fields.
+
+```sh
+jira-cli field list [--format <table|tsv|json>]
+```
+
+Example:
+
+```sh
+jira-cli field list --format json
+```
+
+Legacy alias: `jira-cli fields`
+
+### field get
+
+Inspect one field in detail.
+
+```sh
+jira-cli field get <customfield_<id>> [--project <key>] [--type <name>] [--format <table|tsv|json>]
 ```
 
 Examples:
 
 ```sh
-jira-cli fields --format json
-jira-cli fields customfield_10001 --format json
-jira-cli fields customfield_10001 --project APP --type Bug --format json
+jira-cli field get customfield_10001 --format json
+jira-cli field get customfield_10001 --project APP --type Bug --format json
 ```
+
+Legacy alias: `jira-cli fields <customfield_<id>>`
 
 ## Available Fields
 

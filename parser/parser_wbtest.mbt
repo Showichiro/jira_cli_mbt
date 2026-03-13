@@ -59,9 +59,22 @@ test "parse_args: fields list" {
 }
 
 ///|
+test "parse_args: noun-verb field list" {
+  inspect(parse_args(["field", "list"][:]), content="Ok(ListFields)")
+}
+
+///|
 test "parse_args: fields with field_id" {
   inspect(
     parse_args(["fields", "customfield_10001"][:]),
+    content="Ok(GetField(field_id=\"customfield_10001\", project=\"\", issue_type=\"\"))",
+  )
+}
+
+///|
+test "parse_args: noun-verb field get" {
+  inspect(
+    parse_args(["field", "get", "customfield_10001"][:]),
     content="Ok(GetField(field_id=\"customfield_10001\", project=\"\", issue_type=\"\"))",
   )
 }
@@ -119,7 +132,7 @@ test "extract_output_format: strips flag before command parsing" {
 ///|
 test "parse_request: supports format after command" {
   inspect(
-    parse_request(["issues", "--format", "tsv"][:]),
+    parse_request(["issue", "list", "--format", "tsv"][:]),
     content="Ok({command: ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary]), output_format: Tsv})",
   )
 }
@@ -127,16 +140,16 @@ test "parse_request: supports format after command" {
 ///|
 test "parse_request: preserves format for describe" {
   inspect(
-    parse_request(["describe", "issue", "--format", "json"][:]),
-    content="Ok({command: Describe(command_name=\"issue\"), output_format: Json})",
+    parse_request(["describe", "issue", "get", "--format", "json"][:]),
+    content="Ok({command: Describe(command_name=\"issue get\"), output_format: Json})",
   )
 }
 
 ///|
 test "parse_request: subcommand --help keeps requested format" {
   inspect(
-    parse_request(["issue", "--help", "--format", "json"][:]),
-    content="Ok({command: Help(command_name=\"issue\"), output_format: Json})",
+    parse_request(["issue", "get", "--help", "--format", "json"][:]),
+    content="Ok({command: Help(command_name=\"issue get\"), output_format: Json})",
   )
 }
 

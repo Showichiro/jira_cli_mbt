@@ -250,32 +250,40 @@ test "format_usage: shows installed binary names" {
       #|  --format    table | tsv | json (supported by read-only commands and describe, default: table)
       #|
       #|Commands:
-      #|  config      Set Jira configuration
-      #|              config --base-url <url> --email <email> --api-token <token>
-      #|  issues      List assigned issues (default JQL)
-      #|              issues [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]
-      #|  issue       Get issue details
-      #|              issue <key> [--fields <field,...>] [--format <table|tsv|json>]
-      #|  create      Create a new issue
-      #|              create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
-      #|  update      Update an existing issue
-      #|              update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
-      #|  transition  Transition issue status
-      #|              transition --key <key> --status <status>
-      #|  comment     Add comment to issue
-      #|              comment --key <key> --text <text>
-      #|  assign      Assign issue to user
-      #|              assign --key <key> --email <email>
-      #|  search      Search issues with JQL
-      #|              search --jql <jql> [--format <table|tsv|json>]
-      #|  projects    List all projects
-      #|              projects [--format <table|tsv|json>]
-      #|  fields      List custom fields or inspect one field
-      #|              fields [customfield_<id>] [--project <key>] [--type <type>] [--format <table|tsv|json>]
-      #|  help        Show general help or help for one command
-      #|              help [command]
-      #|  describe    Describe one command for humans or agents
-      #|              describe <command> [--format <table|tsv|json>]
+      #|  config           Set Jira configuration
+      #|                   config --base-url <url> --email <email> --api-token <token>
+      #|  issue            Issue operations
+      #|                   issue <subcommand> [options]
+      #|  issue list       List assigned issues (default JQL)
+      #|                   issue list [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]
+      #|  issue get        Get issue details
+      #|                   issue get <key> [--fields <field,...>] [--format <table|tsv|json>]
+      #|  issue create     Create a new issue
+      #|                   issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
+      #|  issue update     Update an existing issue
+      #|                   issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
+      #|  issue transition Transition issue status
+      #|                   issue transition --key <key> --status <status>
+      #|  issue comment    Add comment to issue
+      #|                   issue comment --key <key> --text <text>
+      #|  issue assign     Assign issue to user
+      #|                   issue assign --key <key> --email <email>
+      #|  issue search     Search issues with JQL
+      #|                   issue search --jql <jql> [--format <table|tsv|json>]
+      #|  project          Project operations
+      #|                   project <subcommand> [options]
+      #|  project list     List all projects
+      #|                   project list [--format <table|tsv|json>]
+      #|  field            Field operations
+      #|                   field <subcommand> [options]
+      #|  field list       List custom fields
+      #|                   field list [--format <table|tsv|json>]
+      #|  field get        Inspect one custom field
+      #|                   field get <customfield_<id>> [--project <key>] [--type <type>] [--format <table|tsv|json>]
+      #|  help             Show general help or help for one command
+      #|                   help [command...]
+      #|  describe         Describe one command for humans or agents
+      #|                   describe <command...> [--format <table|tsv|json>]
       #|
       #|Run `jira-cli help <command>` for per-command help.
       #|Run `jira-cli describe <command> --format json` for machine-readable metadata.
@@ -284,14 +292,44 @@ test "format_usage: shows installed binary names" {
 }
 
 ///|
-test "format_command_help: issue includes output formats and notes" {
+test "format_command_help: issue group shows subcommands" {
   inspect(
     format_command_help(@types.require_command_spec("issue").unwrap()),
     content=(
-      #|issue - Get issue details
+      #|issue - Issue operations
       #|
       #|Usage:
-      #|  jira-cli issue <key> [--fields <field,...>] [--format <table|tsv|json>]
+      #|  jira-cli issue <subcommand> [options]
+      #|
+      #|Positional arguments:
+      #|NAME                REQUIRED  DESCRIPTION                                             
+      #|------------------  --------  --------------------------------------------------------
+      #|subcommand          yes       One of list, get, create, update, transition, comment...
+      #|
+      #|Notes:
+      #|  - Canonical subcommands: list, get, create, update, transition, comment, assign, search
+      #|  - Legacy aliases remain available during the migration
+      #|
+      #|Examples:
+      #|  jira-cli issue list --format json
+      #|  jira-cli issue get PROJ-123
+      #|  jira-cli help issue
+    ),
+  )
+}
+
+///|
+test "format_command_help: issue get includes output formats and notes" {
+  inspect(
+    format_command_help(@types.require_command_spec("issue get").unwrap()),
+    content=(
+      #|issue get - Get issue details
+      #|
+      #|Usage:
+      #|  jira-cli issue get <key> [--fields <field,...>] [--format <table|tsv|json>]
+      #|
+      #|Aliases:
+      #|  issue <key>
       #|
       #|Positional arguments:
       #|NAME                REQUIRED  DESCRIPTION                                             
@@ -311,8 +349,8 @@ test "format_command_help: issue includes output formats and notes" {
       #|  - Field aliases: type, issue_type, issuetype
       #|
       #|Examples:
-      #|  jira-cli issue PROJ-123
-      #|  jira-cli issue PROJ-123 --fields key,status,assignee,summary --format json
+      #|  jira-cli issue get PROJ-123
+      #|  jira-cli issue get PROJ-123 --fields key,status,assignee,summary --format json
     ),
   )
 }
