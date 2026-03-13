@@ -257,13 +257,28 @@ test "select_user_account_id prefers exact match" {
 ///|
 test "select_user_account_id rejects ambiguous results" {
   let users : Array[@core.Any] = [
-    @core.from_entries([("accountId", @core.any("acc-1"))]),
-    @core.from_entries([("accountId", @core.any("acc-2"))]),
+    @core.from_entries([
+      ("accountId", @core.any("acc-1")),
+      ("displayName", @core.any("User One")),
+      ("emailAddress", @core.any("user.one@example.com")),
+    ]),
+    @core.from_entries([
+      ("accountId", @core.any("acc-2")),
+      ("displayName", @core.any("User Two")),
+      ("emailAddress", @core.any("user.two@example.com")),
+    ]),
   ]
-  inspect(
-    select_user_account_id(users, "user@example.com"),
-    content="Err(\"Multiple users matched: user@example.com\")",
-  )
+  match select_user_account_id(users, "user@example.com") {
+    Err(hint) => {
+      assert_eq(hint.message, "Multiple users matched: user@example.com")
+      assert_eq(hint.candidates.length(), 2)
+      assert_eq(hint.candidates[0].value, "user.one@example.com")
+      assert_eq(hint.candidates[0].label, "User One <user.one@example.com>")
+      assert_eq(hint.candidates[0].description, "accountId: acc-1")
+      assert_eq(hint.next_step, "")
+    }
+    Ok(_) => assert_false(true)
+  }
 }
 
 ///|

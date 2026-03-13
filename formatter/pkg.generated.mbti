@@ -10,7 +10,7 @@ pub fn format_command_description_for_output(@types.CommandSpec, @types.OutputFo
 
 pub fn format_command_help(@types.CommandSpec) -> String
 
-pub fn format_error_for_output(@types.CliErrorCategory, String, @types.OutputFormat, usage? : String) -> String
+pub fn format_error_for_output(@types.CliErrorCategory, String, @types.OutputFormat, usage? : String, discovery_hint? : @types.DiscoveryHint) -> String
 
 pub fn format_field_detail(@types.JiraFieldDetail) -> String
 
@@ -28,7 +28,7 @@ pub fn format_issue_list(Array[@types.JiraIssue], Array[@types.IssueField]) -> S
 
 pub fn format_issue_list_for_output(Array[@types.JiraIssue], Array[@types.IssueField], @types.OutputFormat, kind? : String) -> String
 
-pub fn format_issue_types_for_output(String, Array[(String, String)], @types.OutputFormat) -> String
+pub fn format_issue_types_for_output(String, String, Array[(String, String)], @types.OutputFormat) -> String
 
 pub fn format_projects(Array[@types.JiraProject]) -> String
 

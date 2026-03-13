@@ -133,6 +133,15 @@ fn option_json(option : @types.JiraFieldOption) -> String {
 }
 
 ///|
+fn discovery_candidate_json(candidate : @types.DiscoveryCandidate) -> String {
+  json_object([
+    ("value", json_string(candidate.value)),
+    ("label", json_string(candidate.label)),
+    ("description", json_string(candidate.description)),
+  ])
+}
+
+///|
 fn project_json(project : @types.JiraProject) -> String {
   json_object([
     ("key", json_string(project.key)),
@@ -426,16 +435,55 @@ pub fn format_field_detail_for_output(
 ///|
 pub fn format_issue_types_for_output(
   project : String,
+  field_id : String,
   issue_types : Array[(String, String)],
   output_format : @types.OutputFormat,
 ) -> String {
+  let candidates : Array[@types.DiscoveryCandidate] = issue_types.map(fn(
+    entry,
+  ) {
+    {
+      value: entry.1,
+      label: entry.1,
+      description: if entry.0.length() > 0 {
+        "id: " + entry.0
+      } else {
+        ""
+      },
+    }
+  })
+  let hint : @types.DiscoveryHint = {
+    message: if issue_types.is_empty() {
+      "No issue types found for project '\{project}'."
+    } else {
+      "Please specify --type to inspect allowed options for field '\{field_id}' in project '\{project}'."
+    },
+    candidates,
+    required_args: ["--type"],
+    next_step: match issue_types {
+      [(type_id, type_name), ..] =>
+        "Re-run `jira-cli field get \{field_id} --project \{project} --type \"\{type_name}\"` (issue type id: \{type_id})."
+      [] =>
+        "Verify the project key '\{project}' and re-run `jira-cli field get \{field_id} --project \{project}`."
+    },
+  }
   match output_format {
     @types.Table => {
-      let headers = ["ID", "NAME"]
-      let widths = [12, 30]
-      let rows = issue_types.map(fn(entry) { [entry.0, entry.1] })
-      "Please specify --type. Available issue types for \{project}:\n" +
-      format_table(headers, rows, widths)
+      let lines : Array[String] = [hint.message]
+      if not(hint.required_args.is_empty()) {
+        lines.push("Required args: " + hint.required_args.join(", "))
+      }
+      if hint.next_step.length() > 0 {
+        lines.push("Next step: " + hint.next_step)
+      }
+      if issue_types.is_empty() {
+        lines.join("\n")
+      } else {
+        let headers = ["ID", "NAME"]
+        let widths = [12, 30]
+        let rows = issue_types.map(fn(entry) { [entry.0, entry.1] })
+        lines.join("\n") + "\n\n" + format_table(headers, rows, widths)
+      }
     }
     @types.Tsv => {
       let rows = issue_types.map(fn(entry) { [entry.0, entry.1] })
@@ -446,6 +494,14 @@ pub fn format_issue_types_for_output(
         ("schema_version", json_string("v1")),
         ("kind", json_string("issue_types")),
         ("project", json_string(project)),
+        ("field_id", json_string(field_id)),
+        ("message", json_string(hint.message)),
+        (
+          "candidates",
+          json_array(hint.candidates.map(discovery_candidate_json)),
+        ),
+        ("required_args", json_array(hint.required_args.map(json_string))),
+        ("next_step", json_string(hint.next_step)),
         (
           "items",
           json_array(
@@ -467,6 +523,7 @@ pub fn format_error_for_output(
   message : String,
   output_format : @types.OutputFormat,
   usage? : String = "",
+  discovery_hint? : @types.DiscoveryHint = @types.empty_discovery_hint(),
 ) -> String {
   match output_format {
     @types.Json =>
@@ -477,6 +534,15 @@ pub fn format_error_for_output(
           ("category", json_string(category.name())),
           ("exit_code", json_int(category.exit_code())),
           ("message", json_string(message)),
+          (
+            "candidates",
+            json_array(discovery_hint.candidates.map(discovery_candidate_json)),
+          ),
+          (
+            "required_args",
+            json_array(discovery_hint.required_args.map(json_string)),
+          ),
+          ("next_step", json_string(discovery_hint.next_step)),
           ..if usage.length() > 0 {
             [("usage", json_string(usage))]
           } else {
@@ -484,12 +550,39 @@ pub fn format_error_for_output(
           },
         ],
       )
-    _ =>
+    _ => {
+      let lines : Array[String] = []
       if usage.length() > 0 {
-        usage + "\n\nError: " + message
-      } else {
-        "Error: " + message
+        lines.push(usage)
+        lines.push("")
       }
+      lines.push("Error: " + message)
+      if not(discovery_hint.candidates.is_empty()) {
+        lines.push("")
+        lines.push("Candidates:")
+        for candidate in discovery_hint.candidates {
+          let suffix = if candidate.description.length() > 0 {
+            " (" + candidate.description + ")"
+          } else {
+            ""
+          }
+          lines.push("- " + candidate.label + suffix)
+        }
+      }
+      if not(discovery_hint.required_args.is_empty()) {
+        lines.push("")
+        lines.push("Required args:")
+        for required_arg in discovery_hint.required_args {
+          lines.push("- " + required_arg)
+        }
+      }
+      if discovery_hint.next_step.length() > 0 {
+        lines.push("")
+        lines.push("Next step:")
+        lines.push(discovery_hint.next_step)
+      }
+      lines.join("\n")
+    }
   }
 }
 

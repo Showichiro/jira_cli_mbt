@@ -151,6 +151,7 @@ async fn execute_command(
       if project.length() > 0 && issue_type.length() == 0 {
         @formatter.format_issue_types_for_output(
           project,
+          field_id,
           @api.list_issue_types(config, project),
           output_format,
         )
@@ -184,6 +185,7 @@ fn failure_result(
   message : String,
   output_format : @types.OutputFormat,
   usage? : String = "",
+  discovery_hint? : @types.DiscoveryHint = @types.empty_discovery_hint(),
 ) -> @types.CommandRunResult {
   {
     stdout: "",
@@ -192,6 +194,7 @@ fn failure_result(
       message,
       output_format,
       usage~,
+      discovery_hint~,
     ),
     exit_code: category.exit_code(),
   }
@@ -214,11 +217,12 @@ pub async fn run(args : ArrayView[String]) -> @types.CommandRunResult {
         stderr: "",
         exit_code: 0,
       } catch {
-        @api.JiraApiError(status_code~, message~) =>
+        @api.JiraApiError(status_code~, message~, discovery_hint~) =>
           failure_result(
             classify_api_error(status_code, message),
             message,
             output_format,
+            discovery_hint~,
           )
         @config.ConfigError(msg) =>
           failure_result(@types.Config, msg, output_format)

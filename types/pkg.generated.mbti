@@ -12,6 +12,8 @@ pub fn default_detail_issue_fields() -> Array[IssueField]
 
 pub fn default_list_issue_fields() -> Array[IssueField]
 
+pub fn empty_discovery_hint() -> DiscoveryHint
+
 pub fn find_command_spec(String) -> CommandSpec?
 
 pub fn parse_issue_field(String) -> Result[IssueField, String]
@@ -92,6 +94,24 @@ pub(all) struct CommandSpec {
   examples : Array[String]
 }
 pub impl Show for CommandSpec
+
+pub(all) struct DiscoveryCandidate {
+  value : String
+  label : String
+  description : String
+}
+pub impl Eq for DiscoveryCandidate
+pub impl Show for DiscoveryCandidate
+
+pub(all) struct DiscoveryHint {
+  message : String
+  candidates : Array[DiscoveryCandidate]
+  required_args : Array[String]
+  next_step : String
+}
+pub fn DiscoveryHint::is_empty(Self) -> Bool
+pub impl Eq for DiscoveryHint
+pub impl Show for DiscoveryHint
 
 pub(all) struct Invocation {
   command : Command
