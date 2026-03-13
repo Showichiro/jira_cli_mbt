@@ -6,31 +6,142 @@ import {
 }
 
 // Values
+pub fn command_specs() -> Array[CommandSpec]
+
+pub fn custom_field_input_from_set_value(String) -> CustomFieldInput
+
+pub fn custom_field_input_json(Json) -> CustomFieldInput
+
+pub fn custom_field_input_option_id(String) -> CustomFieldInput
+
+pub fn custom_field_input_string(String) -> CustomFieldInput
+
 pub fn default_detail_issue_fields() -> Array[IssueField]
 
 pub fn default_list_issue_fields() -> Array[IssueField]
 
+pub fn empty_discovery_hint() -> DiscoveryHint
+
+pub fn find_command_spec(String) -> CommandSpec?
+
+pub fn full_page_request(start_at? : Int) -> PageRequest
+
+pub fn limited_page_request(Int, start_at? : Int) -> PageRequest
+
+pub fn page_info(Int, Int, Int, Int, Bool, Bool) -> PageInfo
+
+pub fn page_info_from_request(PageRequest, Int, Int) -> PageInfo
+
 pub fn parse_issue_field(String) -> Result[IssueField, String]
+
+pub fn parse_output_format(String) -> Result[OutputFormat, String]
+
+pub fn require_command_spec(String) -> Result[CommandSpec, String]
 
 // Errors
 
 // Types and methods
+pub(all) enum CliErrorCategory {
+  Usage
+  Config
+  Auth
+  NotFound
+  Validation
+  General
+}
+pub fn CliErrorCategory::exit_code(Self) -> Int
+pub fn CliErrorCategory::name(Self) -> String
+pub impl Eq for CliErrorCategory
+pub impl Show for CliErrorCategory
+
 pub(all) enum Command {
-  Config(base_url~ : String, email~ : String, api_token~ : String)
-  ListIssues(jql~ : String, fields~ : Array[IssueField])
+  Config(base_url~ : String, email~ : String, api_token~ : String, api_token_stdin~ : Bool)
+  ListIssues(jql~ : String, fields~ : Array[IssueField], page_request~ : PageRequest)
   GetIssue(key~ : String, fields~ : Array[IssueField])
-  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, String])
-  UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, String])
+  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, CustomFieldInput], dry_run~ : Bool)
+  UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, CustomFieldInput], dry_run~ : Bool)
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
   Assign(key~ : String, email~ : String)
-  Search(jql~ : String)
-  ListProjects
-  ListFields
+  Search(jql~ : String, page_request~ : PageRequest)
+  ListProjects(page_request~ : PageRequest)
+  ListFields(page_request~ : PageRequest)
   GetField(field_id~ : String, project~ : String, issue_type~ : String)
-  Help
+  Help(command_name~ : String)
+  Describe(command_name~ : String)
 }
 pub impl Show for Command
+
+pub(all) struct CommandFlagSpec {
+  name : String
+  value_name : String
+  description : String
+  required : Bool
+  repeatable : Bool
+  default_value : String?
+  aliases : Array[String]
+}
+pub impl Show for CommandFlagSpec
+
+pub(all) struct CommandPositionalSpec {
+  name : String
+  description : String
+  required : Bool
+}
+pub impl Show for CommandPositionalSpec
+
+pub(all) struct CommandRunResult {
+  stdout : String
+  stderr : String
+  exit_code : Int
+}
+pub impl Eq for CommandRunResult
+pub impl Show for CommandRunResult
+
+pub(all) struct CommandSpec {
+  name : String
+  summary : String
+  usage : String
+  aliases : Array[String]
+  positionals : Array[CommandPositionalSpec]
+  flags : Array[CommandFlagSpec]
+  output_formats : Array[OutputFormat]
+  notes : Array[String]
+  examples : Array[String]
+}
+pub impl Show for CommandSpec
+
+pub(all) struct CustomFieldInput {
+  value : Json
+}
+pub fn CustomFieldInput::display_value(Self) -> String
+pub fn CustomFieldInput::json_value(Self) -> Json
+pub impl Eq for CustomFieldInput
+pub impl Show for CustomFieldInput
+
+pub(all) struct DiscoveryCandidate {
+  value : String
+  label : String
+  description : String
+}
+pub impl Eq for DiscoveryCandidate
+pub impl Show for DiscoveryCandidate
+
+pub(all) struct DiscoveryHint {
+  message : String
+  candidates : Array[DiscoveryCandidate]
+  required_args : Array[String]
+  next_step : String
+}
+pub fn DiscoveryHint::is_empty(Self) -> Bool
+pub impl Eq for DiscoveryHint
+pub impl Show for DiscoveryHint
+
+pub(all) struct Invocation {
+  command : Command
+  output_format : OutputFormat
+}
+pub impl Show for Invocation
 
 pub(all) enum IssueField {
   Key
@@ -79,6 +190,12 @@ pub(all) struct JiraFieldOption {
 }
 pub impl Show for JiraFieldOption
 
+pub(all) struct JiraFieldPage {
+  items : Array[JiraField]
+  page : PageInfo
+}
+pub impl Show for JiraFieldPage
+
 pub(all) struct JiraIssue {
   key : String
   summary : String
@@ -92,12 +209,99 @@ pub(all) struct JiraIssue {
 pub fn JiraIssue::field_value(Self, IssueField) -> String
 pub impl Show for JiraIssue
 
+pub(all) struct JiraIssuePage {
+  items : Array[JiraIssue]
+  page : PageInfo
+}
+pub impl Show for JiraIssuePage
+
 pub(all) struct JiraProject {
   key : String
   name : String
   project_type : String
 }
 pub impl Show for JiraProject
+
+pub(all) struct JiraProjectPage {
+  items : Array[JiraProject]
+  page : PageInfo
+}
+pub impl Show for JiraProjectPage
+
+pub(all) struct MutationFieldChange {
+  name : String
+  value : String
+}
+pub impl Eq for MutationFieldChange
+pub impl Show for MutationFieldChange
+
+pub(all) struct MutationOperation {
+  name : String
+  status : MutationOperationStatus
+  detail : String
+}
+pub impl Eq for MutationOperation
+pub impl Show for MutationOperation
+
+pub(all) enum MutationOperationStatus {
+  Planned
+  Applied
+  Failed
+}
+pub fn MutationOperationStatus::name(Self) -> String
+pub impl Eq for MutationOperationStatus
+pub impl Show for MutationOperationStatus
+
+pub(all) struct MutationReport {
+  command : String
+  status : MutationStatus
+  issue_key : String
+  project_key : String
+  dry_run : Bool
+  message : String
+  field_changes : Array[MutationFieldChange]
+  operations : Array[MutationOperation]
+  discovery_hint : DiscoveryHint
+}
+pub impl Eq for MutationReport
+pub impl Show for MutationReport
+
+pub(all) enum MutationStatus {
+  DryRun
+  Success
+  PartialSuccess
+}
+pub fn MutationStatus::name(Self) -> String
+pub impl Eq for MutationStatus
+pub impl Show for MutationStatus
+
+pub(all) enum OutputFormat {
+  Table
+  Tsv
+  Json
+}
+pub fn OutputFormat::name(Self) -> String
+pub impl Eq for OutputFormat
+pub impl Show for OutputFormat
+
+pub(all) struct PageInfo {
+  start_at : Int
+  limit : Int
+  returned : Int
+  total : Int
+  fetch_all : Bool
+  is_last : Bool
+}
+pub impl Eq for PageInfo
+pub impl Show for PageInfo
+
+pub(all) struct PageRequest {
+  limit : Int
+  start_at : Int
+  fetch_all : Bool
+}
+pub impl Eq for PageRequest
+pub impl Show for PageRequest
 
 // Type aliases
 

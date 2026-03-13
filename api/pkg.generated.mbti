@@ -10,27 +10,35 @@ pub async fn add_comment(@types.JiraConfig, String, String) -> Unit
 
 pub async fn assign_issue(@types.JiraConfig, String, String) -> Unit
 
-pub async fn create_issue(@types.JiraConfig, String, String, String, String, Map[String, String]) -> String
+pub async fn create_issue(@types.JiraConfig, String, String, String, String, Map[String, @types.CustomFieldInput]) -> @types.MutationReport
 
 pub async fn get_field_detail(@types.JiraConfig, String, String, String) -> @types.JiraFieldDetail
 
 pub async fn get_issue(@types.JiraConfig, String, Array[@types.IssueField]) -> @types.JiraIssue
 
-pub async fn list_fields(@types.JiraConfig) -> Array[@types.JiraField]
+pub async fn list_fields(@types.JiraConfig, @types.PageRequest) -> @types.JiraFieldPage
 
 pub async fn list_issue_types(@types.JiraConfig, String) -> Array[(String, String)]
 
-pub async fn list_issues(@types.JiraConfig, String, Array[@types.IssueField]) -> Array[@types.JiraIssue]
+pub async fn list_issues(@types.JiraConfig, String, Array[@types.IssueField], @types.PageRequest) -> @types.JiraIssuePage
 
-pub async fn list_projects(@types.JiraConfig) -> Array[@types.JiraProject]
+pub async fn list_projects(@types.JiraConfig, @types.PageRequest) -> @types.JiraProjectPage
+
+pub fn preview_create_issue(String, String, String, String, Map[String, @types.CustomFieldInput]) -> @types.MutationReport
+
+pub fn preview_update_issue(String, String, String, String, String, String, String, Map[String, @types.CustomFieldInput]) -> @types.MutationReport
 
 pub async fn transition_issue(@types.JiraConfig, String, String) -> Unit
 
-pub async fn update_issue(@types.JiraConfig, key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, String]) -> Unit
+pub async fn update_issue(@types.JiraConfig, key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, @types.CustomFieldInput]) -> @types.MutationReport
 
 // Errors
 pub suberror JiraApiError {
-  JiraApiError(String)
+  JiraApiError(status_code~ : Int, message~ : String, discovery_hint~ : @types.DiscoveryHint)
+}
+
+pub suberror JiraMutationPartialSuccess {
+  JiraMutationPartialSuccess(status_code~ : Int, report~ : @types.MutationReport)
 }
 
 // Types and methods

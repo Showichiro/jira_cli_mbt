@@ -1,5 +1,6 @@
 import {
   "Showichiro/jira_cli_mbt/types",
+  "mizchi/js/core",
 }
 
 options(

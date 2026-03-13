@@ -1,21 +1,25 @@
 ///|
+fn write_stderr(message : String) -> Unit {
+  let process = @core.global_this()._get("process")
+  let stderr = process._get("stderr")
+  let _ = stderr._call("write", [@core.any(message + "\n")])
+}
+
+///|
 fn main {
   @core.run_async(async fn() noraise {
     try {
-      let args = @process.argv()[2:]
-      let output = args[:] |> @jira_cli_mbt.parse_args |> @jira_cli_mbt.execute
-      println(output)
+      let result = @jira_cli_mbt.run(@process.argv()[2:])
+      if result.stdout.length() > 0 {
+        println(result.stdout)
+      }
+      if result.stderr.length() > 0 {
+        write_stderr(result.stderr)
+      }
+      @process.exit(result.exit_code)
     } catch {
-      @api.JiraApiError(msg) => {
-        println("Error: \{msg}")
-        @process.exit(1)
-      }
-      @config.ConfigError(msg) => {
-        println("Error: \{msg}")
-        @process.exit(1)
-      }
       e => {
-        println("Error: \{e}")
+        write_stderr("Error: \{e}")
         @process.exit(1)
       }
     }

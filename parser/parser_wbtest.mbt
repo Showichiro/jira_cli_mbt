@@ -55,13 +55,40 @@ test "parse_issue_fields: accepts custom jira fields" {
 
 ///|
 test "parse_args: fields list" {
-  inspect(parse_args(["fields"][:]), content="Ok(ListFields)")
+  inspect(
+    parse_args(["fields"][:]),
+    content="Ok(ListFields(page_request={limit: 0, start_at: 0, fetch_all: true}))",
+  )
+}
+
+///|
+test "parse_args: noun-verb field list" {
+  inspect(
+    parse_args(["field", "list"][:]),
+    content="Ok(ListFields(page_request={limit: 0, start_at: 0, fetch_all: true}))",
+  )
+}
+
+///|
+test "parse_args: legacy fields alias with limit" {
+  inspect(
+    parse_args(["fields", "--limit", "2"][:]),
+    content="Ok(ListFields(page_request={limit: 2, start_at: 0, fetch_all: false}))",
+  )
 }
 
 ///|
 test "parse_args: fields with field_id" {
   inspect(
     parse_args(["fields", "customfield_10001"][:]),
+    content="Ok(GetField(field_id=\"customfield_10001\", project=\"\", issue_type=\"\"))",
+  )
+}
+
+///|
+test "parse_args: noun-verb field get" {
+  inspect(
+    parse_args(["field", "get", "customfield_10001"][:]),
     content="Ok(GetField(field_id=\"customfield_10001\", project=\"\", issue_type=\"\"))",
   )
 }
@@ -97,5 +124,61 @@ test "parse_issue_fields: empty list" {
   inspect(
     parse_issue_fields(" , "),
     content="Err(\"Field list must not be empty\")",
+  )
+}
+
+///|
+test "extract_output_format: defaults to table" {
+  inspect(
+    extract_output_format(["issues"][:]),
+    content="Ok((Table, [\"issues\"]))",
+  )
+}
+
+///|
+test "extract_output_format: strips flag before command parsing" {
+  inspect(
+    extract_output_format(["--format", "json", "issues", "--fields", "key"][:]),
+    content="Ok((Json, [\"issues\", \"--fields\", \"key\"]))",
+  )
+}
+
+///|
+test "parse_request: supports format after command" {
+  inspect(
+    parse_request(["issue", "list", "--format", "tsv"][:]),
+    content="Ok({command: ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary], page_request={limit: 20, start_at: 0, fetch_all: false}), output_format: Tsv})",
+  )
+}
+
+///|
+test "parse_request: preserves format for describe" {
+  inspect(
+    parse_request(["describe", "issue", "get", "--format", "json"][:]),
+    content="Ok({command: Describe(command_name=\"issue get\"), output_format: Json})",
+  )
+}
+
+///|
+test "parse_request: subcommand --help keeps requested format" {
+  inspect(
+    parse_request(["issue", "get", "--help", "--format", "json"][:]),
+    content="Ok({command: Help(command_name=\"issue get\"), output_format: Json})",
+  )
+}
+
+///|
+test "parse_request: rejects missing format value" {
+  inspect(
+    parse_request(["issues", "--format"][:]),
+    content="Err(\"Missing value for flag: --format\")",
+  )
+}
+
+///|
+test "parse_command_line: keeps requested format on parse errors" {
+  inspect(
+    parse_command_line(["issues", "--format", "json", "--fields", "unknown"][:]),
+    content="(Json, Err(\"Unsupported issue field: unknown\"))",
   )
 }

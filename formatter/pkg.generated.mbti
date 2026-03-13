@@ -6,15 +6,35 @@ import {
 }
 
 // Values
+pub fn format_command_description_for_output(@types.CommandSpec, @types.OutputFormat) -> String
+
+pub fn format_command_help(@types.CommandSpec) -> String
+
+pub fn format_error_for_output(@types.CliErrorCategory, String, @types.OutputFormat, usage? : String, discovery_hint? : @types.DiscoveryHint) -> String
+
 pub fn format_field_detail(@types.JiraFieldDetail) -> String
+
+pub fn format_field_detail_for_output(@types.JiraFieldDetail, @types.OutputFormat) -> String
 
 pub fn format_fields(Array[@types.JiraField]) -> String
 
+pub fn format_fields_for_output(@types.JiraFieldPage, @types.OutputFormat) -> String
+
 pub fn format_issue_detail(@types.JiraIssue, Array[@types.IssueField]) -> String
+
+pub fn format_issue_detail_for_output(@types.JiraIssue, Array[@types.IssueField], @types.OutputFormat) -> String
 
 pub fn format_issue_list(Array[@types.JiraIssue], Array[@types.IssueField]) -> String
 
+pub fn format_issue_list_for_output(@types.JiraIssuePage, Array[@types.IssueField], @types.OutputFormat, kind? : String) -> String
+
+pub fn format_issue_types_for_output(String, String, Array[(String, String)], @types.OutputFormat) -> String
+
+pub fn format_mutation_report_for_output(@types.MutationReport, @types.OutputFormat) -> String
+
 pub fn format_projects(Array[@types.JiraProject]) -> String
+
+pub fn format_projects_for_output(@types.JiraProjectPage, @types.OutputFormat) -> String
 
 pub fn format_usage() -> String
 

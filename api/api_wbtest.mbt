@@ -208,11 +208,11 @@ test "requested_api_fields excludes key and dedups aliases" {
 test "build_search_body includes requested fields" {
   inspect(
     @core.json_stringify_pretty(
-      build_search_body("project = TEST", [
-        @types.Key,
-        @types.Summary,
-        @types.Assignee,
-      ]),
+      build_search_body(
+        "project = TEST",
+        [@types.Key, @types.Summary, @types.Assignee],
+        20,
+      ),
       2,
     ),
     content=(
@@ -226,6 +226,112 @@ test "build_search_body includes requested fields" {
       #|}
     ),
   )
+}
+
+///|
+test "slice_items respects limit and start-at" {
+  let items = [1, 2, 3, 4, 5]
+  assert_eq(slice_items(items, @types.limited_page_request(2, start_at=1)), [
+    2, 3,
+  ])
+}
+
+///|
+test "slice_items returns remaining items for fetch_all" {
+  let items = [1, 2, 3, 4, 5]
+  assert_eq(slice_items(items, @types.full_page_request(start_at=3)), [4, 5])
+}
+
+///|
+test "issue_search_page_size uses stable cursor page size when offset exists" {
+  assert_eq(
+    issue_search_page_size(@types.limited_page_request(5, start_at=10)),
+    50,
+  )
+}
+
+///|
+test "issue_search_page_size keeps small single-page requests" {
+  assert_eq(issue_search_page_size(@types.limited_page_request(5)), 5)
+}
+
+///|
+test "preview_create_issue returns stable dry-run report" {
+  let report = preview_create_issue("APP", "Fix login bug", "Bug", "", {
+    "customfield_200": @types.custom_field_input_string("Zed"),
+    "customfield_100": @types.custom_field_input_string("Alpha"),
+  })
+  assert_eq(report.command, "issue create")
+  assert_eq(report.status, @types.DryRun)
+  assert_true(report.dry_run)
+  assert_eq(report.project_key, "APP")
+  assert_eq(
+    report.field_changes.map(fn(change) { change.name }).join(","),
+    "project,summary,issue_type,customfield_100,customfield_200",
+  )
+  assert_eq(report.operations.length(), 1)
+  assert_eq(report.operations[0].status, @types.Planned)
+}
+
+///|
+test "preview_update_issue includes planned operations and normalized labels" {
+  let report = preview_update_issue(
+    "APP-123",
+    "Refine rollout plan",
+    "",
+    "High",
+    "",
+    "backend, urgent",
+    "user@example.com",
+    { "customfield_10001": @types.custom_field_input_option_id("10401") },
+  )
+  assert_eq(report.command, "issue update")
+  assert_eq(report.status, @types.DryRun)
+  assert_true(report.dry_run)
+  assert_eq(report.issue_key, "APP-123")
+  assert_eq(
+    report.field_changes
+    .map(fn(change) { change.name + "=" + change.value })
+    .join(","),
+    "summary=Refine rollout plan,priority=High,labels=backend,urgent,assignee=user@example.com,customfield_10001={\"id\":\"10401\"}",
+  )
+  assert_eq(
+    report.operations
+    .map(fn(operation) { operation.name + ":" + operation.status.name() })
+    .join(","),
+    "update_fields:planned,assign_issue:planned",
+  )
+}
+
+///|
+test "partial_update_report appends safe retry guidance" {
+  let report = partial_update_report(
+    "APP-123",
+    [@types.MutationFieldChange::{ name: "summary", value: "Updated" }],
+    [("summary", @core.any("Updated"))],
+    "User lookup failed",
+    {
+      message: "Multiple Jira users matched user@example.com.",
+      candidates: [
+        {
+          value: "user@example.com",
+          label: "user@example.com",
+          description: "Exact email",
+        },
+      ],
+      required_args: ["--assignee"],
+      next_step: "Re-run `jira-cli issue assign --key APP-123 --email user@example.com`.",
+    },
+  )
+  assert_eq(report.status, @types.PartialSuccess)
+  assert_false(report.dry_run)
+  assert_true(report.message.contains("partially updated"))
+  assert_eq(report.operations[0].status, @types.Applied)
+  assert_eq(report.operations[1].status, @types.Failed)
+  assert_true(
+    report.discovery_hint.next_step.contains("jira-cli issue get APP-123"),
+  )
+  assert_true(report.discovery_hint.next_step.contains("jira-cli issue assign"))
 }
 
 ///|
@@ -257,13 +363,28 @@ test "select_user_account_id prefers exact match" {
 ///|
 test "select_user_account_id rejects ambiguous results" {
   let users : Array[@core.Any] = [
-    @core.from_entries([("accountId", @core.any("acc-1"))]),
-    @core.from_entries([("accountId", @core.any("acc-2"))]),
+    @core.from_entries([
+      ("accountId", @core.any("acc-1")),
+      ("displayName", @core.any("User One")),
+      ("emailAddress", @core.any("user.one@example.com")),
+    ]),
+    @core.from_entries([
+      ("accountId", @core.any("acc-2")),
+      ("displayName", @core.any("User Two")),
+      ("emailAddress", @core.any("user.two@example.com")),
+    ]),
   ]
-  inspect(
-    select_user_account_id(users, "user@example.com"),
-    content="Err(\"Multiple users matched: user@example.com\")",
-  )
+  match select_user_account_id(users, "user@example.com") {
+    Err(hint) => {
+      assert_eq(hint.message, "Multiple users matched: user@example.com")
+      assert_eq(hint.candidates.length(), 2)
+      assert_eq(hint.candidates[0].value, "user.one@example.com")
+      assert_eq(hint.candidates[0].label, "User One <user.one@example.com>")
+      assert_eq(hint.candidates[0].description, "accountId: acc-1")
+      assert_eq(hint.next_step, "")
+    }
+    Ok(_) => assert_false(true)
+  }
 }
 
 ///|
@@ -320,32 +441,17 @@ test "truncate_string exceeds limit" {
 }
 
 ///|
-test "is_numeric: digits return true" {
-  assert_true(is_numeric("123"))
-  assert_true(is_numeric("0"))
-  assert_true(is_numeric("9999"))
-}
-
-///|
-test "is_numeric: non-digits return false" {
-  assert_false(is_numeric(""))
-  assert_false(is_numeric("abc"))
-  assert_false(is_numeric("12a3"))
-  assert_false(is_numeric("-1"))
-  assert_false(is_numeric("3.14"))
-  assert_false(is_numeric(" 123"))
-}
-
-///|
 test "custom_field_value: numeric wraps as id object" {
-  let result = @core.json_stringify(custom_field_value("123"))
+  let result = @core.json_stringify(
+    custom_field_value(@types.custom_field_input_option_id("123")),
+  )
   assert_true(result.contains("\"id\""))
   assert_true(result.contains("\"123\""))
 }
 
 ///|
 test "custom_field_value: non-numeric passes as string" {
-  let result = custom_field_value("hello")
+  let result = custom_field_value(@types.custom_field_input_string("hello"))
   assert_eq(result.to_string(), "hello")
 }
 
