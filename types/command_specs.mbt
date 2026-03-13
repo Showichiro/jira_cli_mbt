@@ -272,7 +272,7 @@ fn create_command_spec() -> CommandSpec {
   {
     name: "issue create",
     summary: "Create a new issue",
-    usage: "issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...",
+    usage: "issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]",
     aliases: ["create"],
     positionals: [],
     flags: [
@@ -321,14 +321,25 @@ fn create_command_spec() -> CommandSpec {
         default_value: "",
         aliases: [],
       },
+      {
+        name: "--dry-run",
+        value_name: "",
+        description: "Preview the create request without calling Jira",
+        required: false,
+        repeatable: false,
+        default_value: "false",
+        aliases: [],
+      },
     ],
-    output_formats: [],
+    output_formats: global_output_formats(),
     notes: [
       "--set only accepts customfield_* keys", "If a --set value is all digits, Jira receives it as an option id object",
+      "--dry-run returns a structured preview and does not require Jira config",
     ],
     examples: [
       "jira-cli issue create --project APP --summary \"Fix login bug\" --type Bug",
       "jira-cli issue create --project APP --summary \"Provision access\" --set customfield_10001=10401",
+      "jira-cli issue create --project APP --summary \"Provision access\" --dry-run --format json",
     ],
   }
 }
@@ -338,7 +349,7 @@ fn update_command_spec() -> CommandSpec {
   {
     name: "issue update",
     summary: "Update an existing issue",
-    usage: "issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...",
+    usage: "issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]",
     aliases: ["update"],
     positionals: [
       { name: "key", description: "Issue key to update", required: true },
@@ -407,13 +418,24 @@ fn update_command_spec() -> CommandSpec {
         default_value: "",
         aliases: [],
       },
+      {
+        name: "--dry-run",
+        value_name: "",
+        description: "Preview the update request without calling Jira",
+        required: false,
+        repeatable: false,
+        default_value: "false",
+        aliases: [],
+      },
     ],
-    output_formats: [],
+    output_formats: global_output_formats(),
     notes: [
       "At least one update field is required", "update may partially succeed if assignee changes fail after field updates",
+      "--dry-run returns a structured preview and does not require Jira config",
     ],
     examples: [
       "jira-cli issue update APP-123 --priority High --labels backend,urgent", "jira-cli issue update APP-123 --summary \"Refine rollout plan\" --set customfield_10001=10401",
+      "jira-cli issue update APP-123 --summary \"Refine rollout plan\" --assignee user@example.com --dry-run --format json",
     ],
   }
 }

@@ -256,6 +256,85 @@ test "issue_search_page_size keeps small single-page requests" {
 }
 
 ///|
+test "preview_create_issue returns stable dry-run report" {
+  let report = preview_create_issue("APP", "Fix login bug", "Bug", "", {
+    "customfield_200": "Zed",
+    "customfield_100": "Alpha",
+  })
+  assert_eq(report.command, "issue create")
+  assert_eq(report.status, @types.DryRun)
+  assert_true(report.dry_run)
+  assert_eq(report.project_key, "APP")
+  assert_eq(
+    report.field_changes.map(fn(change) { change.name }).join(","),
+    "project,summary,issue_type,customfield_100,customfield_200",
+  )
+  assert_eq(report.operations.length(), 1)
+  assert_eq(report.operations[0].status, @types.Planned)
+}
+
+///|
+test "preview_update_issue includes planned operations and normalized labels" {
+  let report = preview_update_issue(
+    "APP-123",
+    "Refine rollout plan",
+    "",
+    "High",
+    "",
+    "backend, urgent",
+    "user@example.com",
+    { "customfield_10001": "10401" },
+  )
+  assert_eq(report.command, "issue update")
+  assert_eq(report.status, @types.DryRun)
+  assert_true(report.dry_run)
+  assert_eq(report.issue_key, "APP-123")
+  assert_eq(
+    report.field_changes
+    .map(fn(change) { change.name + "=" + change.value })
+    .join(","),
+    "summary=Refine rollout plan,priority=High,labels=backend,urgent,assignee=user@example.com,customfield_10001=10401",
+  )
+  assert_eq(
+    report.operations
+    .map(fn(operation) { operation.name + ":" + operation.status.name() })
+    .join(","),
+    "update_fields:planned,assign_issue:planned",
+  )
+}
+
+///|
+test "partial_update_report appends safe retry guidance" {
+  let report = partial_update_report(
+    "APP-123",
+    [@types.MutationFieldChange::{ name: "summary", value: "Updated" }],
+    [("summary", @core.any("Updated"))],
+    "User lookup failed",
+    {
+      message: "Multiple Jira users matched user@example.com.",
+      candidates: [
+        {
+          value: "user@example.com",
+          label: "user@example.com",
+          description: "Exact email",
+        },
+      ],
+      required_args: ["--assignee"],
+      next_step: "Re-run `jira-cli issue assign --key APP-123 --email user@example.com`.",
+    },
+  )
+  assert_eq(report.status, @types.PartialSuccess)
+  assert_false(report.dry_run)
+  assert_true(report.message.contains("partially updated"))
+  assert_eq(report.operations[0].status, @types.Applied)
+  assert_eq(report.operations[1].status, @types.Failed)
+  assert_true(
+    report.discovery_hint.next_step.contains("jira-cli issue get APP-123"),
+  )
+  assert_true(report.discovery_hint.next_step.contains("jira-cli issue assign"))
+}
+
+///|
 test "build_issue_path omits query when key only" {
   inspect(
     build_issue_path("TEST-1", [@types.Key]),

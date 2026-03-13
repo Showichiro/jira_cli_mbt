@@ -78,7 +78,19 @@ test "command specs resolve canonical names and aliases" {
 
   let create_spec = @types.require_command_spec("create").unwrap()
   assert_eq(create_spec.name, "issue create")
+  assert_eq(
+    create_spec.output_formats.map(fn(format) { format.name() }).join(","),
+    "table,tsv,json",
+  )
+  assert_true(create_spec.flags.any(fn(flag) { flag.name == "--dry-run" }))
 
   let issue_group_spec = @types.require_command_spec("issue").unwrap()
   assert_eq(issue_group_spec.name, "issue")
+
+  let update_spec = @types.require_command_spec("issue update").unwrap()
+  assert_eq(
+    update_spec.output_formats.map(fn(format) { format.name() }).join(","),
+    "table,tsv,json",
+  )
+  assert_true(update_spec.flags.any(fn(flag) { flag.name == "--dry-run" }))
 }

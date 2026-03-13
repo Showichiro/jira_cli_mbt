@@ -154,12 +154,60 @@ fn discovery_candidate_json(candidate : @types.DiscoveryCandidate) -> String {
 }
 
 ///|
+fn mutation_field_change_json(change : @types.MutationFieldChange) -> String {
+  json_object([
+    ("name", json_string(change.name)),
+    ("value", json_string(change.value)),
+  ])
+}
+
+///|
+fn mutation_operation_json(operation : @types.MutationOperation) -> String {
+  json_object([
+    ("name", json_string(operation.name)),
+    ("status", json_string(operation.status.name())),
+    ("detail", json_string(operation.detail)),
+  ])
+}
+
+///|
 fn project_json(project : @types.JiraProject) -> String {
   json_object([
     ("key", json_string(project.key)),
     ("name", json_string(project.name)),
     ("project_type", json_string(project.project_type)),
   ])
+}
+
+///|
+fn append_discovery_hint_lines(
+  lines : Array[String],
+  discovery_hint : @types.DiscoveryHint,
+) -> Unit {
+  if not(discovery_hint.candidates.is_empty()) {
+    lines.push("")
+    lines.push("Candidates:")
+    for candidate in discovery_hint.candidates {
+      let suffix = if candidate.description.length() > 0 {
+        " (" + candidate.description + ")"
+      } else {
+        ""
+      }
+      lines.push("- " + candidate.label + suffix)
+    }
+  }
+  if not(discovery_hint.required_args.is_empty()) {
+    lines.push("")
+    lines.push("Required args:")
+    for required_arg in discovery_hint.required_args {
+      lines.push("- " + required_arg)
+    }
+  }
+  if discovery_hint.next_step.length() > 0 {
+    lines.push("")
+    lines.push("Next step:")
+    lines.push(discovery_hint.next_step)
+  }
 }
 
 ///|
@@ -583,32 +631,130 @@ pub fn format_error_for_output(
         lines.push("")
       }
       lines.push("Error: " + message)
-      if not(discovery_hint.candidates.is_empty()) {
-        lines.push("")
-        lines.push("Candidates:")
-        for candidate in discovery_hint.candidates {
-          let suffix = if candidate.description.length() > 0 {
-            " (" + candidate.description + ")"
-          } else {
-            ""
-          }
-          lines.push("- " + candidate.label + suffix)
-        }
-      }
-      if not(discovery_hint.required_args.is_empty()) {
-        lines.push("")
-        lines.push("Required args:")
-        for required_arg in discovery_hint.required_args {
-          lines.push("- " + required_arg)
-        }
-      }
-      if discovery_hint.next_step.length() > 0 {
-        lines.push("")
-        lines.push("Next step:")
-        lines.push(discovery_hint.next_step)
-      }
+      append_discovery_hint_lines(lines, discovery_hint)
       lines.join("\n")
     }
+  }
+}
+
+///|
+fn format_mutation_report(report : @types.MutationReport) -> String {
+  let dry_run_label = if report.dry_run { "yes" } else { "no" }
+  let lines : Array[String] = [
+    "Command:    " + report.command,
+    "Status:     " + report.status.name(),
+    "Dry Run:    " + dry_run_label,
+  ]
+  if report.issue_key.length() > 0 {
+    lines.push("Issue Key:  " + report.issue_key)
+  }
+  if report.project_key.length() > 0 {
+    lines.push("Project:    " + report.project_key)
+  }
+  lines.push("Message:    " + report.message)
+
+  if not(report.field_changes.is_empty()) {
+    lines.push("")
+    lines.push("Field Changes:")
+    let rows = report.field_changes.map(fn(change) {
+      [change.name, truncate(change.value, 60)]
+    })
+    lines.push(format_table(["FIELD", "VALUE"], rows, [20, 60]))
+  }
+
+  if not(report.operations.is_empty()) {
+    lines.push("")
+    lines.push("Operations:")
+    let rows = report.operations.map(fn(operation) {
+      [operation.name, operation.status.name(), truncate(operation.detail, 60)]
+    })
+    lines.push(format_table(["NAME", "STATUS", "DETAIL"], rows, [14, 14, 60]))
+  }
+
+  append_discovery_hint_lines(lines, report.discovery_hint)
+  lines.join("\n")
+}
+
+///|
+fn format_mutation_report_tsv(report : @types.MutationReport) -> String {
+  let rows : Array[Array[String]] = [
+    ["report", "command", "", report.command, ""],
+    ["report", "status", "", report.status.name(), ""],
+    ["report", "dry_run", "", if report.dry_run { "true" } else { "false" }, ""],
+    ["report", "issue_key", "", report.issue_key, ""],
+    ["report", "project_key", "", report.project_key, ""],
+    ["report", "message", "", report.message, ""],
+  ]
+  for change in report.field_changes {
+    rows.push(["field_change", change.name, "", change.value, ""])
+  }
+  for operation in report.operations {
+    rows.push([
+      "operation",
+      operation.name,
+      operation.status.name(),
+      "",
+      operation.detail,
+    ])
+  }
+  for candidate in report.discovery_hint.candidates {
+    rows.push([
+      "candidate",
+      candidate.value,
+      "",
+      candidate.label,
+      candidate.description,
+    ])
+  }
+  for required_arg in report.discovery_hint.required_args {
+    rows.push(["required_arg", required_arg, "", "", ""])
+  }
+  if report.discovery_hint.next_step.length() > 0 {
+    rows.push(["next_step", "", "", report.discovery_hint.next_step, ""])
+  }
+  [
+    format_tsv_row(["section", "name", "status", "value", "detail"]),
+    ..rows.map(format_tsv_row),
+  ].join("\n")
+}
+
+///|
+fn format_mutation_report_json(report : @types.MutationReport) -> String {
+  json_object([
+    ("schema_version", json_string("v1")),
+    ("kind", json_string("mutation_result")),
+    ("command", json_string(report.command)),
+    ("status", json_string(report.status.name())),
+    ("issue_key", json_string(report.issue_key)),
+    ("project_key", json_string(report.project_key)),
+    ("dry_run", json_bool(report.dry_run)),
+    ("message", json_string(report.message)),
+    (
+      "field_changes",
+      json_array(report.field_changes.map(mutation_field_change_json)),
+    ),
+    ("operations", json_array(report.operations.map(mutation_operation_json))),
+    (
+      "candidates",
+      json_array(report.discovery_hint.candidates.map(discovery_candidate_json)),
+    ),
+    (
+      "required_args",
+      json_array(report.discovery_hint.required_args.map(json_string)),
+    ),
+    ("next_step", json_string(report.discovery_hint.next_step)),
+  ])
+}
+
+///|
+pub fn format_mutation_report_for_output(
+  report : @types.MutationReport,
+  output_format : @types.OutputFormat,
+) -> String {
+  match output_format {
+    @types.Table => format_mutation_report(report)
+    @types.Tsv => format_mutation_report_tsv(report)
+    @types.Json => format_mutation_report_json(report)
   }
 }
 
@@ -849,7 +995,7 @@ pub fn format_usage() -> String {
   let usage_indent = " ".repeat(name_width + 3)
   let lines : Array[String] = [
     "Jira CLI (MoonBit)", "", "Usage: jira-cli <command> [options]", "Alias: jira-cli-mbt <command> [options]",
-    "", "Global options:", "  --format    table | tsv | json (supported by read-only commands and describe, default: table)",
+    "", "Global options:", "  --format    table | tsv | json (supported by read-only commands, issue create, issue update, and describe, default: table)",
     "", "Commands:",
   ]
   for spec in specs {

@@ -220,7 +220,8 @@ pub(all) enum Command {
     summary~ : String,
     issue_type~ : String,
     description~ : String,
-    custom_fields~ : Map[String, String]
+    custom_fields~ : Map[String, String],
+    dry_run~ : Bool
   )
   UpdateIssue(
     key~ : String,
@@ -230,7 +231,8 @@ pub(all) enum Command {
     issue_type~ : String,
     labels~ : String,
     assignee~ : String,
-    custom_fields~ : Map[String, String]
+    custom_fields~ : Map[String, String],
+    dry_run~ : Bool
   )
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)

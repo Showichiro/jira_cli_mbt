@@ -247,7 +247,7 @@ test "format_usage: shows installed binary names" {
       #|Alias: jira-cli-mbt <command> [options]
       #|
       #|Global options:
-      #|  --format    table | tsv | json (supported by read-only commands and describe, default: table)
+      #|  --format    table | tsv | json (supported by read-only commands, issue create, issue update, and describe, default: table)
       #|
       #|Commands:
       #|  config           Set Jira configuration
@@ -259,9 +259,9 @@ test "format_usage: shows installed binary names" {
       #|  issue get        Get issue details
       #|                   issue get <key> [--fields <field,...>] [--format <table|tsv|json>]
       #|  issue create     Create a new issue
-      #|                   issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
+      #|                   issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]
       #|  issue update     Update an existing issue
-      #|                   issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
+      #|                   issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]
       #|  issue transition Transition issue status
       #|                   issue transition --key <key> --status <status>
       #|  issue comment    Add comment to issue
@@ -561,4 +561,85 @@ test "format_error_for_output: json mode includes discovery details" {
       #|{"schema_version":"v1","kind":"error","category":"validation","exit_code":5,"message":"Transition 'QA' not found for issue 'APP-1'.","candidates":[{"value":"In Progress","label":"In Progress","description":"id: 31"}],"required_args":[],"next_step":"Re-run `jira-cli issue transition --key APP-1 --status \"In Progress\"`."}
     ),
   )
+}
+
+///|
+test "format_mutation_report_for_output: json mode is structured" {
+  inspect(
+    format_mutation_report_for_output(
+      {
+        command: "issue update",
+        status: @types.PartialSuccess,
+        issue_key: "APP-123",
+        project_key: "",
+        dry_run: false,
+        message: "Issue APP-123 partially updated; assignee change failed after field updates.",
+        field_changes: [{ name: "summary", value: "Updated" }],
+        operations: [
+          {
+            name: "update_fields",
+            status: @types.Applied,
+            detail: "Updated 1 field value(s).",
+          },
+          {
+            name: "assign_issue",
+            status: @types.Failed,
+            detail: "Multiple Jira users matched user@example.com.",
+          },
+        ],
+        discovery_hint: {
+          message: "Multiple Jira users matched user@example.com.",
+          candidates: [
+            {
+              value: "user@example.com",
+              label: "user@example.com",
+              description: "Exact email",
+            },
+          ],
+          required_args: ["--assignee"],
+          next_step: "Re-fetch `jira-cli issue get APP-123` to confirm the applied fields.",
+        },
+      },
+      @types.Json,
+    ),
+    content=(
+      #|{"schema_version":"v1","kind":"mutation_result","command":"issue update","status":"partial_success","issue_key":"APP-123","project_key":"","dry_run":false,"message":"Issue APP-123 partially updated; assignee change failed after field updates.","field_changes":[{"name":"summary","value":"Updated"}],"operations":[{"name":"update_fields","status":"applied","detail":"Updated 1 field value(s)."},{"name":"assign_issue","status":"failed","detail":"Multiple Jira users matched user@example.com."}],"candidates":[{"value":"user@example.com","label":"user@example.com","description":"Exact email"}],"required_args":["--assignee"],"next_step":"Re-fetch `jira-cli issue get APP-123` to confirm the applied fields."}
+    ),
+  )
+}
+
+///|
+test "format_mutation_report_for_output: table mode includes recovery sections" {
+  let formatted = format_mutation_report_for_output(
+    {
+      command: "issue create",
+      status: @types.DryRun,
+      issue_key: "",
+      project_key: "APP",
+      dry_run: true,
+      message: "Dry run: would create a new issue in project APP.",
+      field_changes: [
+        { name: "project", value: "APP" },
+        { name: "summary", value: "Fix login bug" },
+      ],
+      operations: [
+        {
+          name: "create_issue",
+          status: @types.Planned,
+          detail: "Would create a new issue with 2 field value(s).",
+        },
+      ],
+      discovery_hint: {
+        message: "",
+        candidates: [],
+        required_args: [],
+        next_step: "Re-run without --dry-run to apply the change.",
+      },
+    },
+    @types.Table,
+  )
+  assert_true(formatted.contains("Status:     dry_run"))
+  assert_true(formatted.contains("Field Changes:"))
+  assert_true(formatted.contains("create_issue"))
+  assert_true(formatted.contains("Next step:"))
 }
