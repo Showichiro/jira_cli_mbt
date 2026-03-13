@@ -76,7 +76,7 @@ The CLI now uses stable non-zero exit codes so automation can branch on failures
 | `4` | Config or authentication error |
 | `5` | Validation / conflict error |
 
-Successful output is written to stdout. Errors are written to stderr. When `--format json` is requested, error output on stderr is also JSON.
+Successful output is written to stdout. Errors are written to stderr. When `--format json` is requested, error output on stderr is also JSON and includes recovery fields such as `candidates`, `required_args`, and `next_step` when the CLI can suggest a retry.
 
 ## Configuration
 
@@ -377,7 +377,10 @@ Examples:
 ```sh
 jira-cli field get customfield_10001 --format json
 jira-cli field get customfield_10001 --project APP --type Bug --format json
+jira-cli field get customfield_10001 --project APP --format json
 ```
+
+When `--project` is provided without `--type`, the CLI returns the project's issue types. In `--format json`, that discovery response includes `candidates`, `required_args`, and `next_step` so an agent can retry without parsing prose.
 
 Legacy alias: `jira-cli fields <customfield_<id>>`
 

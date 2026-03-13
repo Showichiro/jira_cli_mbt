@@ -14,11 +14,23 @@ test "failure_result returns structured json error" {
     @types.Usage,
     "Unknown command: nope",
     @types.Json,
+    discovery_hint={
+      message: "Unknown command: nope",
+      candidates: [
+        { value: "issue list", label: "issue list", description: "" },
+      ],
+      required_args: [],
+      next_step: "Run `jira-cli help issue`.",
+    },
   )
   assert_eq(result.stdout, "")
   assert_eq(result.exit_code, 2)
   assert_true(result.stderr.contains("\"category\":\"usage\""))
   assert_true(result.stderr.contains("\"exit_code\":2"))
+  assert_true(result.stderr.contains("\"candidates\":["))
+  assert_true(
+    result.stderr.contains("\"next_step\":\"Run `jira-cli help issue`.\""),
+  )
 }
 
 ///|

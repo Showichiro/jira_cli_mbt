@@ -464,11 +464,24 @@ test "format_issue_types_for_output: json wrapper lists choices" {
   inspect(
     format_issue_types_for_output(
       "APP",
+      "customfield_10001",
       [("10001", "Task"), ("10002", "Bug")],
       @types.Json,
     ),
     content=(
-      #|{"schema_version":"v1","kind":"issue_types","project":"APP","items":[{"id":"10001","name":"Task"},{"id":"10002","name":"Bug"}]}
+      #|{"schema_version":"v1","kind":"issue_types","project":"APP","field_id":"customfield_10001","message":"Please specify --type to inspect allowed options for field 'customfield_10001' in project 'APP'.","candidates":[{"value":"Task","label":"Task","description":"id: 10001"},{"value":"Bug","label":"Bug","description":"id: 10002"}],"required_args":["--type"],"next_step":"Re-run `jira-cli field get customfield_10001 --project APP --type \"Task\"` (issue type id: 10001).","items":[{"id":"10001","name":"Task"},{"id":"10002","name":"Bug"}]}
+    ),
+  )
+}
+
+///|
+test "format_issue_types_for_output: text mode handles empty issue types" {
+  inspect(
+    format_issue_types_for_output("APP", "customfield_10001", [], @types.Table),
+    content=(
+      #|No issue types found for project 'APP'.
+      #|Required args: --type
+      #|Next step: Verify the project key 'APP' and re-run `jira-cli field get customfield_10001 --project APP`.
     ),
   )
 }
@@ -495,7 +508,29 @@ test "format_error_for_output: json mode is structured" {
   inspect(
     format_error_for_output(@types.Validation, "Invalid value", @types.Json),
     content=(
-      #|{"schema_version":"v1","kind":"error","category":"validation","exit_code":5,"message":"Invalid value"}
+      #|{"schema_version":"v1","kind":"error","category":"validation","exit_code":5,"message":"Invalid value","candidates":[],"required_args":[],"next_step":""}
+    ),
+  )
+}
+
+///|
+test "format_error_for_output: json mode includes discovery details" {
+  inspect(
+    format_error_for_output(
+      @types.Validation,
+      "Transition 'QA' not found for issue 'APP-1'.",
+      @types.Json,
+      discovery_hint={
+        message: "Transition 'QA' not found for issue 'APP-1'.",
+        candidates: [
+          { value: "In Progress", label: "In Progress", description: "id: 31" },
+        ],
+        required_args: [],
+        next_step: "Re-run `jira-cli issue transition --key APP-1 --status \"In Progress\"`.",
+      },
+    ),
+    content=(
+      #|{"schema_version":"v1","kind":"error","category":"validation","exit_code":5,"message":"Transition 'QA' not found for issue 'APP-1'.","candidates":[{"value":"In Progress","label":"In Progress","description":"id: 31"}],"required_args":[],"next_step":"Re-run `jira-cli issue transition --key APP-1 --status \"In Progress\"`."}
     ),
   )
 }

@@ -133,7 +133,7 @@ If the project is known but the issue type is not, call:
 jira-cli field get customfield_10001 --project APP
 ```
 
-The CLI responds with the available issue types for that project.
+The CLI responds with the available issue types for that project. In `--format json`, the discovery response includes `candidates`, `required_args`, and `next_step`.
 
 ## Mutating Commands
 
@@ -196,5 +196,7 @@ jira-cli issue assign --key APP-123 --email user@example.com
 ## Recovery Notes
 
 - `update` may partially succeed if field updates succeed but assignee assignment fails afterward. Re-fetch the issue before retrying.
-- If `transition` fails with "Transition '<name>' not found", inspect the issue in Jira or try the exact visible status name.
+- `transition`, `assign`, and `field get` validation failures include structured recovery metadata. In `--format json`, use `candidates`, `required_args`, and `next_step` instead of parsing prose.
+- If `transition` fails because the target status is unavailable, retry with one of the returned transition candidates.
+- If `issue assign` returns multiple Jira users, retry with an exact candidate email from the structured error payload.
 - If Jira returns a field validation error, use `field list` and `field get <id> --project <KEY> --type <NAME>` to confirm the expected field ID and allowed option values.

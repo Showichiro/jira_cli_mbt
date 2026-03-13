@@ -30,7 +30,7 @@ pub async fn update_issue(@types.JiraConfig, key~ : String, summary~ : String, d
 
 // Errors
 pub suberror JiraApiError {
-  JiraApiError(status_code~ : Int, message~ : String)
+  JiraApiError(status_code~ : Int, message~ : String, discovery_hint~ : @types.DiscoveryHint)
 }
 
 // Types and methods
