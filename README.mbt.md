@@ -83,14 +83,22 @@ Successful output is written to stdout. Errors are written to stderr. When `--fo
 Before using any Jira commands, configure your connection:
 
 ```sh
-jira-cli config --base-url <url> --email <email> --api-token <token>
+jira-cli config [--base-url <url>] [--email <email>] [--api-token <token> | --api-token-stdin]
 ```
 
 - `--base-url` — Your Jira instance URL (e.g. `https://yoursite.atlassian.net`)
 - `--email` — Your Atlassian account email
 - `--api-token` — Your Jira API token ([create one here](https://id.atlassian.com/manage-profile/security/api-tokens))
+- `--api-token-stdin` — Read the API token from stdin instead of argv
 
 The configuration is saved to `~/.config/jira_cli_mbt/config.json`.
+
+Resolution order:
+
+- `jira-cli config`: `flag > env > config`
+- other Jira commands: `env > config`
+
+Supported environment variables: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`
 
 ## Commands
 
@@ -130,10 +138,18 @@ jira-cli describe issue get --format json
 Set up Jira connection credentials.
 
 ```sh
-jira-cli config --base-url <url> --email <email> --api-token <token>
+jira-cli config [--base-url <url>] [--email <email>] [--api-token <token> | --api-token-stdin]
 ```
 
-All three flags are required.
+Examples:
+
+```sh
+jira-cli config --base-url https://your-site.atlassian.net --email you@example.com --api-token <token>
+printf %s "$JIRA_API_TOKEN" | jira-cli config --base-url https://your-site.atlassian.net --email you@example.com --api-token-stdin
+JIRA_BASE_URL=https://your-site.atlassian.net JIRA_EMAIL=you@example.com JIRA_API_TOKEN=token jira-cli config
+```
+
+Missing values are resolved with `flag > env > config`, so you can update only one field while reusing the saved config.
 
 Canonical command forms use `noun verb` names such as `issue list` and `field get`. Legacy aliases such as `issues`, `create`, `projects`, and `fields` continue to work during the migration period.
 

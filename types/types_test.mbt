@@ -76,6 +76,14 @@ test "command specs resolve canonical names and aliases" {
   let issues_spec = @types.require_command_spec("issues").unwrap()
   assert_eq(issues_spec.name, "issue list")
 
+  let config_spec = @types.require_command_spec("config").unwrap()
+  assert_true(
+    config_spec.flags.any(fn(flag) { flag.name == "--api-token-stdin" }),
+  )
+  assert_true(
+    config_spec.notes.any(fn(note) { note.contains("flag > env > config") }),
+  )
+
   let create_spec = @types.require_command_spec("create").unwrap()
   assert_eq(create_spec.name, "issue create")
   assert_eq(

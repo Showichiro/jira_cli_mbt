@@ -190,13 +190,32 @@ test "parse_args: config with all flags" {
         "--api-token", "tok",
       ][:],
     ),
-    content="Ok(Config(base_url=\"https://x.atlassian.net\", email=\"a@b.com\", api_token=\"tok\"))",
+    content="Ok(Config(base_url=\"https://x.atlassian.net\", email=\"a@b.com\", api_token=\"tok\", api_token_stdin=false))",
   )
 }
 
 ///|
-test "parse_args: config missing flags" {
-  assert_true(@parser.parse_args(["config", "--base-url", "url"][:]) is Err(_))
+test "parse_args: config allows partial overrides" {
+  inspect(
+    @parser.parse_args(["config", "--base-url", "https://x.atlassian.net"][:]),
+    content="Ok(Config(base_url=\"https://x.atlassian.net\", email=\"\", api_token=\"\", api_token_stdin=false))",
+  )
+}
+
+///|
+test "parse_args: config reads token from stdin" {
+  inspect(
+    @parser.parse_args(["config", "--api-token-stdin"][:]),
+    content="Ok(Config(base_url=\"\", email=\"\", api_token=\"\", api_token_stdin=true))",
+  )
+}
+
+///|
+test "parse_args: config rejects token flag and stdin together" {
+  inspect(
+    @parser.parse_args(["config", "--api-token", "tok", "--api-token-stdin"][:]),
+    content="Err(\"--api-token and --api-token-stdin cannot be combined\")",
+  )
 }
 
 ///|

@@ -278,16 +278,22 @@ fn parse_flags(
 
 ///|
 fn parse_config(args : ArrayView[String]) -> Result[@types.Command, String] {
-  match parse_flags(args, config_flags, {}) {
+  let (api_token_stdin, remaining) = extract_switch_flag(
+    "--api-token-stdin", args,
+  )
+  match parse_flags(remaining[:], config_flags, {}) {
     Ok(flags) =>
-      match
-        (flags.get("base_url"), flags.get("email"), flags.get("api_token")) {
-        (Some(base_url), Some(email), Some(api_token)) =>
-          Ok(@types.Config(base_url~, email~, api_token~))
-        _ =>
-          Err(
-            "Usage: config --base-url <url> --email <email> --api-token <token>",
-          )
+      if api_token_stdin && flags.contains("api_token") {
+        Err("--api-token and --api-token-stdin cannot be combined")
+      } else {
+        Ok(
+          @types.Config(
+            base_url=flags.get("base_url").unwrap_or(""),
+            email=flags.get("email").unwrap_or(""),
+            api_token=flags.get("api_token").unwrap_or(""),
+            api_token_stdin~,
+          ),
+        )
       }
     Err(message) => Err(message)
   }
