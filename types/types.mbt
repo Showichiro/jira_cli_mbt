@@ -18,6 +18,34 @@ pub(all) enum IssueField {
 } derive(Show, Eq)
 
 ///|
+pub(all) enum OutputFormat {
+  Table
+  Tsv
+  Json
+} derive(Show, Eq)
+
+///|
+pub fn parse_output_format(name : String) -> Result[OutputFormat, String] {
+  let normalized = name.trim().to_string().to_lower()
+  match normalized {
+    "table" => Ok(Table)
+    "tsv" => Ok(Tsv)
+    "json" => Ok(Json)
+    "" => Err("Output format must not be empty")
+    _ => Err("Unsupported output format: \{normalized}")
+  }
+}
+
+///|
+pub fn OutputFormat::name(self : OutputFormat) -> String {
+  match self {
+    Table => "table"
+    Tsv => "tsv"
+    Json => "json"
+  }
+}
+
+///|
 pub fn parse_issue_field(name : String) -> Result[IssueField, String] {
   let normalized = name.trim().to_string().to_lower()
   match normalized {
@@ -163,6 +191,12 @@ pub(all) enum Command {
   ListFields
   GetField(field_id~ : String, project~ : String, issue_type~ : String)
   Help
+} derive(Show)
+
+///|
+pub(all) struct Invocation {
+  command : Command
+  output_format : OutputFormat
 } derive(Show)
 
 ///|

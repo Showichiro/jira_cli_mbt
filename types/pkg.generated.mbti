@@ -12,6 +12,8 @@ pub fn default_list_issue_fields() -> Array[IssueField]
 
 pub fn parse_issue_field(String) -> Result[IssueField, String]
 
+pub fn parse_output_format(String) -> Result[OutputFormat, String]
+
 // Errors
 
 // Types and methods
@@ -31,6 +33,12 @@ pub(all) enum Command {
   Help
 }
 pub impl Show for Command
+
+pub(all) struct Invocation {
+  command : Command
+  output_format : OutputFormat
+}
+pub impl Show for Invocation
 
 pub(all) enum IssueField {
   Key
@@ -98,6 +106,15 @@ pub(all) struct JiraProject {
   project_type : String
 }
 pub impl Show for JiraProject
+
+pub(all) enum OutputFormat {
+  Table
+  Tsv
+  Json
+}
+pub fn OutputFormat::name(Self) -> String
+pub impl Eq for OutputFormat
+pub impl Show for OutputFormat
 
 // Type aliases
 

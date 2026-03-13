@@ -99,3 +99,35 @@ test "parse_issue_fields: empty list" {
     content="Err(\"Field list must not be empty\")",
   )
 }
+
+///|
+test "extract_output_format: defaults to table" {
+  inspect(
+    extract_output_format(["issues"][:]),
+    content="Ok((Table, [\"issues\"]))",
+  )
+}
+
+///|
+test "extract_output_format: strips flag before command parsing" {
+  inspect(
+    extract_output_format(["--format", "json", "issues", "--fields", "key"][:]),
+    content="Ok((Json, [\"issues\", \"--fields\", \"key\"]))",
+  )
+}
+
+///|
+test "parse_request: supports format after command" {
+  inspect(
+    parse_request(["issues", "--format", "tsv"][:]),
+    content="Ok({command: ListIssues(jql=\"assignee = currentUser() ORDER BY updated DESC\", fields=[Key, IssueType, Status, Priority, Summary]), output_format: Tsv})",
+  )
+}
+
+///|
+test "parse_request: rejects missing format value" {
+  inspect(
+    parse_request(["issues", "--format"][:]),
+    content="Err(\"Missing value for flag: --format\")",
+  )
+}

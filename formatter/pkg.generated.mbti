@@ -8,13 +8,25 @@ import {
 // Values
 pub fn format_field_detail(@types.JiraFieldDetail) -> String
 
+pub fn format_field_detail_for_output(@types.JiraFieldDetail, @types.OutputFormat) -> String
+
 pub fn format_fields(Array[@types.JiraField]) -> String
+
+pub fn format_fields_for_output(Array[@types.JiraField], @types.OutputFormat) -> String
 
 pub fn format_issue_detail(@types.JiraIssue, Array[@types.IssueField]) -> String
 
+pub fn format_issue_detail_for_output(@types.JiraIssue, Array[@types.IssueField], @types.OutputFormat) -> String
+
 pub fn format_issue_list(Array[@types.JiraIssue], Array[@types.IssueField]) -> String
 
+pub fn format_issue_list_for_output(Array[@types.JiraIssue], Array[@types.IssueField], @types.OutputFormat, kind? : String) -> String
+
+pub fn format_issue_types_for_output(String, Array[(String, String)], @types.OutputFormat) -> String
+
 pub fn format_projects(Array[@types.JiraProject]) -> String
+
+pub fn format_projects_for_output(Array[@types.JiraProject], @types.OutputFormat) -> String
 
 pub fn format_usage() -> String
 
