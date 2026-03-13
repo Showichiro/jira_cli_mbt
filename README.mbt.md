@@ -212,14 +212,15 @@ Legacy alias: `jira-cli issue PROJ-123`
 Create a new issue.
 
 ```sh
-jira-cli issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]
+jira-cli issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
 ```
 
 - `--project` — Project key (required)
 - `--summary` — Issue summary (required)
 - `--type` — Issue type (default: `Task`)
 - `--description` — Issue description
-- `--set` — Set a custom field value (repeatable, format: `customfield_xxxxx=value`)
+- `--set` — Convenience shortcut for simple custom field values (repeatable, format: `customfield_xxxxx=value`)
+- `--set-json` — Structured custom field payload as a JSON object keyed by `customfield_*`
 - `--dry-run` — Preview the request without calling Jira
 - `--format` — Output the preview or result as `table`, `tsv`, or `json`
 
@@ -228,7 +229,10 @@ Example:
 ```sh
 jira-cli issue create --project MYPROJ --summary "Fix login bug" --type Bug --description "Login fails on Safari"
 jira-cli issue create --project MYPROJ --summary "Fix login bug" --dry-run --format json
+jira-cli issue create --project MYPROJ --summary "Provision access" --set-json '{"customfield_10001":{"id":"10401"},"customfield_10002":"Platform Team"}'
 ```
+
+Prefer `--set-json` for explicit typed values such as option IDs, arrays, or nested objects. `--set` remains available as a convenience shortcut, and purely numeric `--set` values still map to `{ "id": "<value>" }` for backward compatibility.
 
 Legacy alias: `jira-cli create`
 
@@ -237,7 +241,7 @@ Legacy alias: `jira-cli create`
 Update an existing issue.
 
 ```sh
-jira-cli issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]
+jira-cli issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
 ```
 
 - `<key>` — Issue key (required)
@@ -247,7 +251,8 @@ jira-cli issue update <key> [--summary <text>] [--description <text>] [--priorit
 - `--type` — Issue type name
 - `--labels` — Comma-separated labels
 - `--assignee` — Assignee email
-- `--set` — Set a custom field value (repeatable, format: `customfield_xxxxx=value`)
+- `--set` — Convenience shortcut for simple custom field values (repeatable, format: `customfield_xxxxx=value`)
+- `--set-json` — Structured custom field payload as a JSON object keyed by `customfield_*`
 - `--dry-run` — Preview the update without calling Jira
 - `--format` — Output the preview or result as `table`, `tsv`, or `json`
 
@@ -258,7 +263,10 @@ Example:
 ```sh
 jira-cli issue update PROJ-123 --priority High --labels "backend,urgent"
 jira-cli issue update PROJ-123 --summary "Refine rollout plan" --assignee user@example.com --dry-run --format json
+jira-cli issue update PROJ-123 --set-json '{"customfield_10001":{"id":"10401"},"customfield_10002":["Backend","Urgent"]}'
 ```
+
+`--set` and `--set-json` both require `customfield_*` keys. If the same key appears multiple times across either flag, the last value wins.
 
 Legacy alias: `jira-cli update`
 
@@ -421,6 +429,7 @@ jira-cli field get customfield_10001 --project APP --format json
 ```
 
 When `--project` is provided without `--type`, the CLI returns the project's issue types. In `--format json`, that discovery response includes `candidates`, `required_args`, and `next_step` so an agent can retry without parsing prose.
+When both `--project` and `--type` are provided, the field detail output includes `accepted_input` examples for both `--set` and `--set-json`.
 
 Legacy alias: `jira-cli fields <customfield_<id>>`
 

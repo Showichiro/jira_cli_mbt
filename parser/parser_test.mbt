@@ -219,72 +219,186 @@ test "parse_args: config rejects token flag and stdin together" {
 }
 
 ///|
+fn assert_custom_field_display_values(
+  actual : Map[String, @types.CustomFieldInput],
+  expected : Map[String, String],
+) -> Unit raise {
+  assert_eq(actual.length(), expected.length())
+  for entry in expected {
+    assert_eq(actual.get(entry.0).unwrap().display_value(), entry.1)
+  }
+}
+
+///|
+fn assert_create_issue_result(
+  result : Result[@types.Command, String],
+  project : String,
+  summary : String,
+  issue_type : String,
+  description : String,
+  custom_fields : Map[String, String],
+  dry_run : Bool,
+) -> Unit raise {
+  match result {
+    Ok(
+      @types.CreateIssue(
+        project=actual_project,
+        summary=actual_summary,
+        issue_type=actual_issue_type,
+        description=actual_description,
+        custom_fields=actual_custom_fields,
+        dry_run=actual_dry_run
+      )
+    ) => {
+      assert_eq(actual_project, project)
+      assert_eq(actual_summary, summary)
+      assert_eq(actual_issue_type, issue_type)
+      assert_eq(actual_description, description)
+      assert_eq(actual_dry_run, dry_run)
+      assert_custom_field_display_values(actual_custom_fields, custom_fields)
+    }
+    _ => assert_false(true)
+  }
+}
+
+///|
+fn assert_update_issue_result(
+  result : Result[@types.Command, String],
+  key : String,
+  summary : String,
+  description : String,
+  priority : String,
+  issue_type : String,
+  labels : String,
+  assignee : String,
+  custom_fields : Map[String, String],
+  dry_run : Bool,
+) -> Unit raise {
+  match result {
+    Ok(
+      @types.UpdateIssue(
+        key=actual_key,
+        summary=actual_summary,
+        description=actual_description,
+        priority=actual_priority,
+        issue_type=actual_issue_type,
+        labels=actual_labels,
+        assignee=actual_assignee,
+        custom_fields=actual_custom_fields,
+        dry_run=actual_dry_run
+      )
+    ) => {
+      assert_eq(actual_key, key)
+      assert_eq(actual_summary, summary)
+      assert_eq(actual_description, description)
+      assert_eq(actual_priority, priority)
+      assert_eq(actual_issue_type, issue_type)
+      assert_eq(actual_labels, labels)
+      assert_eq(actual_assignee, assignee)
+      assert_eq(actual_dry_run, dry_run)
+      assert_custom_field_display_values(actual_custom_fields, custom_fields)
+    }
+    _ => assert_false(true)
+  }
+}
+
+///|
 test "parse_args: noun-verb issue create" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       ["issue", "create", "--project", "PROJ", "--summary", "Fix bug"][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    {},
+    false,
   )
 }
 
 ///|
 test "parse_args: legacy create issue" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       ["create", "--project", "PROJ", "--summary", "Fix bug"][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    {},
+    false,
   )
 }
 
 ///|
 test "parse_args: create with type and description" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       [
         "create", "--project", "PROJ", "--summary", "Fix bug", "--type", "Bug", "--description",
         "Details",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Bug\", description=\"Details\", custom_fields={}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Bug",
+    "Details",
+    {},
+    false,
   )
 }
 
 ///|
 test "parse_args: create with one --set flag" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       [
         "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_12345=High",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_12345\": \"High\"}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    { "customfield_12345": "High" },
+    false,
   )
 }
 
 ///|
 test "parse_args: create with multiple --set flags" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       [
         "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_12345=High",
         "--set", "customfield_67890=Team A",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_12345\": \"High\", \"customfield_67890\": \"Team A\"}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    { "customfield_12345": "High", "customfield_67890": "Team A" },
+    false,
   )
 }
 
 ///|
 test "parse_args: create --set value contains equals sign" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       [
         "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=a=b",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"a=b\"}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    { "customfield_123": "a=b" },
+    false,
   )
 }
 
@@ -314,14 +428,19 @@ test "parse_args: create --set without equals sign errors" {
 
 ///|
 test "parse_args: create --set duplicate key last wins" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       [
         "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=first",
         "--set", "customfield_123=second",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"second\"}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    { "customfield_123": "second" },
+    false,
   )
 }
 
@@ -351,39 +470,119 @@ test "parse_args: create --set customfield_ without id errors" {
 
 ///|
 test "parse_args: create --set multi-word value" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       [
         "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=hello",
         "world",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"hello world\"}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    { "customfield_123": "hello world" },
+    false,
   )
 }
 
 ///|
 test "parse_args: create --set multi-word value followed by another flag" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       [
         "create", "--project", "PROJ", "--summary", "Fix bug", "--set", "customfield_123=hello",
         "world", "--set", "customfield_456=bar",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={\"customfield_123\": \"hello world\", \"customfield_456\": \"bar\"}, dry_run=false))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    { "customfield_123": "hello world", "customfield_456": "bar" },
+    false,
+  )
+}
+
+///|
+test "parse_args: create with --set-json supports multiple fields" {
+  assert_create_issue_result(
+    @parser.parse_args(
+      [
+        "issue", "create", "--project", "PROJ", "--summary", "Fix bug", "--set-json",
+        "{\"customfield_12345\":{\"id\":\"10401\"},\"customfield_67890\":[\"Backend\",\"Urgent\"]}",
+      ][:],
+    ),
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    {
+      "customfield_12345": "{\"id\":\"10401\"}",
+      "customfield_67890": "[\"Backend\",\"Urgent\"]",
+    },
+    false,
+  )
+}
+
+///|
+test "parse_args: create with --set-json invalid json errors" {
+  inspect(
+    @parser.parse_args(
+      [
+        "issue", "create", "--project", "PROJ", "--summary", "Fix bug", "--set-json",
+        "{\"customfield_12345\":",
+      ][:],
+    ),
+    content="Err(\"Invalid JSON for --set-json: Unexpected end of file\")",
+  )
+}
+
+///|
+test "parse_args: create with --set-json requires object" {
+  inspect(
+    @parser.parse_args(
+      [
+        "issue", "create", "--project", "PROJ", "--summary", "Fix bug", "--set-json",
+        "[1,2,3]",
+      ][:],
+    ),
+    content="Err(\"--set-json expects a JSON object like '{\\\"customfield_10001\\\":{\\\"id\\\":\\\"10401\\\"}}'\")",
+  )
+}
+
+///|
+test "parse_args: create with mixed --set and --set-json keeps last value" {
+  assert_create_issue_result(
+    @parser.parse_args(
+      [
+        "issue", "create", "--project", "PROJ", "--summary", "Fix bug", "--set",
+        "customfield_123=legacy", "--set-json", "{\"customfield_123\":{\"id\":\"10401\"},\"customfield_456\":\"Backend\"}",
+      ][:],
+    ),
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    { "customfield_123": "{\"id\":\"10401\"}", "customfield_456": "Backend" },
+    false,
   )
 }
 
 ///|
 test "parse_args: create with dry-run" {
-  inspect(
+  assert_create_issue_result(
     @parser.parse_args(
       [
         "issue", "create", "--project", "PROJ", "--summary", "Fix bug", "--dry-run",
       ][:],
     ),
-    content="Ok(CreateIssue(project=\"PROJ\", summary=\"Fix bug\", issue_type=\"Task\", description=\"\", custom_fields={}, dry_run=true))",
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    {},
+    true,
   )
 }
 
@@ -492,55 +691,95 @@ test "parse_args: disallowed flag returns error per subcommand" {
 
 ///|
 test "parse_args: update with summary" {
-  inspect(
+  assert_update_issue_result(
     @parser.parse_args(["update", "TEST-1", "--summary", "New title"][:]),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"New title\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={}, dry_run=false))",
+    "TEST-1",
+    "New title",
+    "",
+    "",
+    "",
+    "",
+    "",
+    {},
+    false,
   )
 }
 
 ///|
 test "parse_args: update with priority and labels" {
-  inspect(
+  assert_update_issue_result(
     @parser.parse_args(
       ["update", "TEST-1", "--priority", "High", "--labels", "bug,urgent"][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"High\", issue_type=\"\", labels=\"bug,urgent\", assignee=\"\", custom_fields={}, dry_run=false))",
+    "TEST-1",
+    "",
+    "",
+    "High",
+    "",
+    "bug,urgent",
+    "",
+    {},
+    false,
   )
 }
 
 ///|
 test "parse_args: update with assignee only" {
-  inspect(
+  assert_update_issue_result(
     @parser.parse_args(
       ["update", "TEST-1", "--assignee", "user@example.com"][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"user@example.com\", custom_fields={}, dry_run=false))",
+    "TEST-1",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "user@example.com",
+    {},
+    false,
   )
 }
 
 ///|
 test "parse_args: update with description and custom field" {
-  inspect(
+  assert_update_issue_result(
     @parser.parse_args(
       [
         "update", "TEST-1", "--description", "New desc", "--set", "customfield_123=value",
       ][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"New desc\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={\"customfield_123\": \"value\"}, dry_run=false))",
+    "TEST-1",
+    "",
+    "New desc",
+    "",
+    "",
+    "",
+    "",
+    { "customfield_123": "value" },
+    false,
   )
 }
 
 ///|
 test "parse_args: update with type only" {
-  inspect(
+  assert_update_issue_result(
     @parser.parse_args(["update", "TEST-1", "--type", "Bug"][:]),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"\", description=\"\", priority=\"\", issue_type=\"Bug\", labels=\"\", assignee=\"\", custom_fields={}, dry_run=false))",
+    "TEST-1",
+    "",
+    "",
+    "",
+    "Bug",
+    "",
+    "",
+    {},
+    false,
   )
 }
 
 ///|
 test "parse_args: update with all flags" {
-  inspect(
+  assert_update_issue_result(
     @parser.parse_args(
       [
         "update", "TEST-1", "--summary", "title", "--description", "desc", "--priority",
@@ -548,17 +787,56 @@ test "parse_args: update with all flags" {
         "customfield_123=val",
       ][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"title\", description=\"desc\", priority=\"High\", issue_type=\"Bug\", labels=\"bug\", assignee=\"a@b.com\", custom_fields={\"customfield_123\": \"val\"}, dry_run=false))",
+    "TEST-1",
+    "title",
+    "desc",
+    "High",
+    "Bug",
+    "bug",
+    "a@b.com",
+    { "customfield_123": "val" },
+    false,
+  )
+}
+
+///|
+test "parse_args: update with --set-json supports multiple fields" {
+  assert_update_issue_result(
+    @parser.parse_args(
+      [
+        "issue", "update", "TEST-1", "--set-json", "{\"customfield_123\":{\"id\":\"10401\"},\"customfield_456\":{\"value\":\"Backend\"}}",
+      ][:],
+    ),
+    "TEST-1",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    {
+      "customfield_123": "{\"id\":\"10401\"}",
+      "customfield_456": "{\"value\":\"Backend\"}",
+    },
+    false,
   )
 }
 
 ///|
 test "parse_args: update with dry-run" {
-  inspect(
+  assert_update_issue_result(
     @parser.parse_args(
       ["issue", "update", "TEST-1", "--summary", "title", "--dry-run"][:],
     ),
-    content="Ok(UpdateIssue(key=\"TEST-1\", summary=\"title\", description=\"\", priority=\"\", issue_type=\"\", labels=\"\", assignee=\"\", custom_fields={}, dry_run=true))",
+    "TEST-1",
+    "title",
+    "",
+    "",
+    "",
+    "",
+    "",
+    {},
+    true,
   )
 }
 

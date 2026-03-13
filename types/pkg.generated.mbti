@@ -8,6 +8,14 @@ import {
 // Values
 pub fn command_specs() -> Array[CommandSpec]
 
+pub fn custom_field_input_from_set_value(String) -> CustomFieldInput
+
+pub fn custom_field_input_json(Json) -> CustomFieldInput
+
+pub fn custom_field_input_option_id(String) -> CustomFieldInput
+
+pub fn custom_field_input_string(String) -> CustomFieldInput
+
 pub fn default_detail_issue_fields() -> Array[IssueField]
 
 pub fn default_list_issue_fields() -> Array[IssueField]
@@ -50,8 +58,8 @@ pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String, api_token_stdin~ : Bool)
   ListIssues(jql~ : String, fields~ : Array[IssueField], page_request~ : PageRequest)
   GetIssue(key~ : String, fields~ : Array[IssueField])
-  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, String], dry_run~ : Bool)
-  UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, String], dry_run~ : Bool)
+  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, CustomFieldInput], dry_run~ : Bool)
+  UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, CustomFieldInput], dry_run~ : Bool)
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
   Assign(key~ : String, email~ : String)
@@ -102,6 +110,14 @@ pub(all) struct CommandSpec {
   examples : Array[String]
 }
 pub impl Show for CommandSpec
+
+pub(all) struct CustomFieldInput {
+  value : Json
+}
+pub fn CustomFieldInput::display_value(Self) -> String
+pub fn CustomFieldInput::json_value(Self) -> Json
+pub impl Eq for CustomFieldInput
+pub impl Show for CustomFieldInput
 
 pub(all) struct DiscoveryCandidate {
   value : String

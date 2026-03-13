@@ -154,6 +154,7 @@ jira-cli field get customfield_10001 --project APP
 ```
 
 The CLI responds with the available issue types for that project. In `--format json`, the discovery response includes `candidates`, `required_args`, and `next_step`.
+When the issue type is known, the field detail JSON also includes `accepted_input` examples so an agent can construct `--set` or `--set-json` values without guessing.
 
 ## Mutating Commands
 
@@ -168,6 +169,7 @@ Create an issue with custom fields:
 
 ```sh
 jira-cli issue create --project APP --summary "Provision access" --set customfield_10001=10401 --set customfield_10002="Platform Team"
+jira-cli issue create --project APP --summary "Provision access" --set-json '{"customfield_10001":{"id":"10401"},"customfield_10002":"Platform Team"}'
 ```
 
 Update an issue:
@@ -181,6 +183,7 @@ Update summary, description, assignee, and custom fields:
 
 ```sh
 jira-cli issue update APP-123 --summary "Refine rollout plan" --description "Updated details" --assignee user@example.com --set customfield_10001=10401
+jira-cli issue update APP-123 --set-json '{"customfield_10001":{"id":"10401"},"customfield_10002":["Backend","Urgent"]}'
 ```
 
 Transition an issue:
@@ -213,8 +216,10 @@ jira-cli issue assign --key APP-123 --email user@example.com
 - `issue list`, `issue search`, and their legacy aliases return up to 20 results by default.
 - `project list` and `field list` return all visible results by default.
 - Multi-word values are accepted for flags, but quote them in shell commands to avoid accidental word splitting or glob expansion.
-- `--set` only accepts `customfield_*` keys. Duplicate `--set` keys are allowed and the last value wins.
-- If a `--set` value is all digits, the CLI sends `{ "id": "<value>" }` to Jira. Use this for select-like fields when `field get <id> --project <KEY> --type <NAME>` returns option IDs.
+- `field get <id> --project <KEY> --type <NAME> --format json` includes `accepted_input` examples for both `--set` and `--set-json`.
+- `--set` and `--set-json` only accept `customfield_*` keys. Duplicate keys are allowed and the last value wins across both flags.
+- Prefer `--set-json` for explicit typed values such as `{ "id": "<value>" }`, arrays, or nested objects.
+- `--set` remains a legacy convenience shortcut. If its value is all digits, the CLI still sends `{ "id": "<value>" }` to Jira for backward compatibility.
 - Descriptions and comments are sent as Jira ADF text generated from plain text input.
 - `help <command>` and `<command> --help` are equivalent human-readable entry points.
 - `issue`, `project`, and `field` without a subcommand show group help.

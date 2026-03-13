@@ -532,7 +532,7 @@ pub async fn create_issue(
   summary : String,
   issue_type : String,
   description : String,
-  custom_fields : Map[String, String],
+  custom_fields : Map[String, @types.CustomFieldInput],
 ) -> @types.MutationReport {
   let field_changes = create_issue_field_changes(
     project, summary, issue_type, description, custom_fields,
@@ -561,7 +561,7 @@ pub async fn update_issue(
   issue_type~ : String,
   labels~ : String,
   assignee~ : String,
-  custom_fields~ : Map[String, String],
+  custom_fields~ : Map[String, @types.CustomFieldInput],
 ) -> @types.MutationReport {
   let field_changes = update_issue_field_changes(
     summary, description, priority, issue_type, labels, assignee, custom_fields,
@@ -917,26 +917,12 @@ pub async fn get_field_detail(
 }
 
 ///|
-fn custom_field_value(value : String) -> @core.Any {
-  if is_numeric(value) {
-    @core.from_entries([("id", @core.any(value))])
-  } else {
-    @core.any(value)
-  }
-}
+extern "js" fn json_string_to_any(text : String) -> @core.Any =
+  #|(text) => JSON.parse(text)
 
 ///|
-fn is_numeric(s : String) -> Bool {
-  if s.length() == 0 {
-    return false
-  }
-  for i in 0..<s.length() {
-    let c = s[i].to_int().unsafe_to_char()
-    if c < '0' || c > '9' {
-      return false
-    }
-  }
-  true
+fn custom_field_value(value : @types.CustomFieldInput) -> @core.Any {
+  json_string_to_any(value.json_value().stringify())
 }
 
 ///|

@@ -174,15 +174,18 @@ test "format_field_detail: no options" {
     },
     options: [],
   }
-  inspect(
-    format_field_detail(detail),
-    content=(
-      #|ID:          customfield_10001
-      #|Name:        Team
-      #|Type:        string
-      #|Custom Type: 
-      #|
-      #|No options available for this field.
+  let formatted = format_field_detail(detail)
+  assert_true(formatted.contains("ID:          customfield_10001"))
+  assert_true(formatted.contains("No options available for this field."))
+  assert_true(formatted.contains("Accepted Input:"))
+  assert_true(formatted.contains("--set customfield_10001=<value>"))
+  assert_true(
+    formatted.contains("--set-json '{\"customfield_10001\":\"value\"}'"),
+  )
+  assert_true(formatted.contains("Notes:"))
+  assert_true(
+    formatted.contains(
+      "Prefer `--set-json` for explicit typed values and nested JSON.",
     ),
   )
 }
@@ -199,19 +202,20 @@ test "format_field_detail: with options" {
     },
     options: [{ id: "1", value: "Frontend" }, { id: "2", value: "Backend" }],
   }
-  inspect(
-    format_field_detail(detail),
-    content=(
-      #|ID:          customfield_10001
-      #|Name:        Team
-      #|Type:        option
-      #|Custom Type: com.atlassian.jira.plugin.system.customfieldtypes:select
-      #|
-      #|Options:
-      #|ID          VALUE                         
-      #|----------  ------------------------------
-      #|1           Frontend                      
-      #|2           Backend                       
+  let formatted = format_field_detail(detail)
+  assert_true(
+    formatted.contains(
+      "Custom Type: com.atlassian.jira.plugin.system.customfieldtypes:select",
+    ),
+  )
+  assert_true(formatted.contains("Options:"))
+  assert_true(formatted.contains("1           Frontend"))
+  assert_true(
+    formatted.contains("--set-json '{\"customfield_10001\":{\"id\":\"1\"}}'"),
+  )
+  assert_true(
+    formatted.contains(
+      "This field exposes allowed options; prefer `{\"id\":\"<option-id>\"}` with `--set-json`.",
     ),
   )
 }
@@ -259,9 +263,9 @@ test "format_usage: shows installed binary names" {
       #|  issue get        Get issue details
       #|                   issue get <key> [--fields <field,...>] [--format <table|tsv|json>]
       #|  issue create     Create a new issue
-      #|                   issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]
+      #|                   issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
       #|  issue update     Update an existing issue
-      #|                   issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]
+      #|                   issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
       #|  issue transition Transition issue status
       #|                   issue transition --key <key> --status <status>
       #|  issue comment    Add comment to issue
@@ -482,7 +486,7 @@ test "format_field_detail_for_output: json wrapper includes options" {
   inspect(
     format_field_detail_for_output(detail, @types.Json),
     content=(
-      #|{"schema_version":"v1","kind":"field_detail","item":{"field":{"id":"customfield_10001","name":"Team","custom":true,"type":"option","custom_type":"select"},"options":[{"id":"1","value":"Frontend"},{"id":"2","value":"Backend"}]}}
+      #|{"schema_version":"v1","kind":"field_detail","item":{"field":{"id":"customfield_10001","name":"Team","custom":true,"type":"option","custom_type":"select"},"options":[{"id":"1","value":"Frontend"},{"id":"2","value":"Backend"}],"accepted_input":{"set_flag":"--set customfield_10001=<value>","set_json_examples":["--set-json '{\"customfield_10001\":\"value\"}'","--set-json '{\"customfield_10001\":{\"id\":\"1\"}}'"],"notes":["`--set` remains a convenience shortcut for simple string values.","Prefer `--set-json` for explicit typed values and nested JSON.","This field exposes allowed options; prefer `{\"id\":\"<option-id>\"}` with `--set-json`."]}}}
     ),
   )
 }

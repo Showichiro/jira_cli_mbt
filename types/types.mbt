@@ -225,7 +225,7 @@ pub(all) enum Command {
     summary~ : String,
     issue_type~ : String,
     description~ : String,
-    custom_fields~ : Map[String, String],
+    custom_fields~ : Map[String, CustomFieldInput],
     dry_run~ : Bool
   )
   UpdateIssue(
@@ -236,7 +236,7 @@ pub(all) enum Command {
     issue_type~ : String,
     labels~ : String,
     assignee~ : String,
-    custom_fields~ : Map[String, String],
+    custom_fields~ : Map[String, CustomFieldInput],
     dry_run~ : Bool
   )
   Transition(key~ : String, status~ : String)

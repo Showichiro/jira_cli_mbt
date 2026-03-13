@@ -286,7 +286,7 @@ fn create_command_spec() -> CommandSpec {
   {
     name: "issue create",
     summary: "Create a new issue",
-    usage: "issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]",
+    usage: "issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]",
     aliases: ["create"],
     positionals: [],
     flags: [
@@ -336,6 +336,15 @@ fn create_command_spec() -> CommandSpec {
         aliases: [],
       },
       {
+        name: "--set-json",
+        value_name: "json-object",
+        description: "Merge custom field values from a JSON object",
+        required: false,
+        repeatable: true,
+        default_value: "",
+        aliases: [],
+      },
+      {
         name: "--dry-run",
         value_name: "",
         description: "Preview the create request without calling Jira",
@@ -347,12 +356,15 @@ fn create_command_spec() -> CommandSpec {
     ],
     output_formats: global_output_formats(),
     notes: [
-      "--set only accepts customfield_* keys", "If a --set value is all digits, Jira receives it as an option id object",
+      "--set only accepts customfield_* keys and remains a convenience shortcut",
+      "--set-json accepts a JSON object mapping customfield_* keys to JSON values",
+      "Prefer --set-json for explicit typed values such as {\"id\":\"10401\"}", "If a --set value is all digits, the CLI preserves the legacy convenience behavior and sends it as an option id object",
       "--dry-run returns a structured preview and does not require Jira config",
     ],
     examples: [
       "jira-cli issue create --project APP --summary \"Fix login bug\" --type Bug",
       "jira-cli issue create --project APP --summary \"Provision access\" --set customfield_10001=10401",
+      "jira-cli issue create --project APP --summary \"Provision access\" --set-json '{\"customfield_10001\":{\"id\":\"10401\"},\"customfield_10002\":\"Platform Team\"}'",
       "jira-cli issue create --project APP --summary \"Provision access\" --dry-run --format json",
     ],
   }
@@ -363,7 +375,7 @@ fn update_command_spec() -> CommandSpec {
   {
     name: "issue update",
     summary: "Update an existing issue",
-    usage: "issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--dry-run] [--format <table|tsv|json>]",
+    usage: "issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]",
     aliases: ["update"],
     positionals: [
       { name: "key", description: "Issue key to update", required: true },
@@ -433,6 +445,15 @@ fn update_command_spec() -> CommandSpec {
         aliases: [],
       },
       {
+        name: "--set-json",
+        value_name: "json-object",
+        description: "Merge custom field values from a JSON object",
+        required: false,
+        repeatable: true,
+        default_value: "",
+        aliases: [],
+      },
+      {
         name: "--dry-run",
         value_name: "",
         description: "Preview the update request without calling Jira",
@@ -445,10 +466,13 @@ fn update_command_spec() -> CommandSpec {
     output_formats: global_output_formats(),
     notes: [
       "At least one update field is required", "update may partially succeed if assignee changes fail after field updates",
-      "--dry-run returns a structured preview and does not require Jira config",
+      "--set only accepts customfield_* keys and remains a convenience shortcut",
+      "--set-json accepts a JSON object mapping customfield_* keys to JSON values",
+      "Prefer --set-json for explicit typed values such as {\"id\":\"10401\"}", "--dry-run returns a structured preview and does not require Jira config",
     ],
     examples: [
       "jira-cli issue update APP-123 --priority High --labels backend,urgent", "jira-cli issue update APP-123 --summary \"Refine rollout plan\" --set customfield_10001=10401",
+      "jira-cli issue update APP-123 --set-json '{\"customfield_10001\":{\"id\":\"10401\"},\"customfield_10002\":[\"Backend\",\"Urgent\"]}'",
       "jira-cli issue update APP-123 --summary \"Refine rollout plan\" --assignee user@example.com --dry-run --format json",
     ],
   }
@@ -677,6 +701,7 @@ fn field_get_command_spec() -> CommandSpec {
     output_formats: global_output_formats(),
     notes: [
       "--type requires --project", "If --project is given without --type, the CLI returns available issue types",
+      "JSON output includes accepted_input examples for `issue create --set-json` and `issue update --set-json`",
     ],
     examples: [
       "jira-cli field get customfield_10001", "jira-cli field get customfield_10001 --project APP --type Bug --format json",
