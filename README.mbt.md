@@ -50,7 +50,7 @@ moon run --target js cmd/main -- <command> [options]
 
 ## Output formats
 
-Read-only commands support a global `--format` option:
+Read-only commands and `describe` support a global `--format` option:
 
 ```sh
 jira-cli --format json issues
@@ -61,7 +61,7 @@ jira-cli issue PROJ-123 --format tsv
 - `tsv` — tab-separated rows for shell pipelines
 - `json` — stable machine-readable output for agents and automation
 
-Supported read-only commands: `issues`, `issue`, `search`, `projects`, `fields`.
+Supported commands: `issues`, `issue`, `search`, `projects`, `fields`, `describe`.
 
 ## Exit codes
 
@@ -96,12 +96,31 @@ The configuration is saved to `~/.config/jira_cli_mbt/config.json`.
 
 ### help
 
-Show help message.
+Show general help or help for one command.
 
 ```sh
 jira-cli help
+jira-cli help issue
+jira-cli issue --help
 jira-cli --help
 jira-cli -h
+```
+
+### describe
+
+Return the CLI's self-description for one command.
+
+```sh
+jira-cli describe <command> [--format <table|tsv|json>]
+```
+
+- `<command>` — Command name to describe
+- `--format` — Output format (default: `table`; use `json` for automation)
+
+Example:
+
+```sh
+jira-cli describe issue --format json
 ```
 
 ### config
@@ -282,8 +301,7 @@ jira-cli projects --format json
 List custom fields or inspect one field in detail.
 
 ```sh
-jira-cli fields [--format <table|tsv|json>]
-jira-cli fields <customfield_id> [--project <key>] [--type <name>] [--format <table|tsv|json>]
+jira-cli fields [customfield_<id>] [--project <key>] [--type <name>] [--format <table|tsv|json>]
 ```
 
 Examples:
@@ -325,5 +343,5 @@ moon test --target js
 moon test --target js --update
 
 # Format code and update package info
-moon fmt && moon info --target js
+moon info --target js && moon fmt
 ```

@@ -223,7 +223,8 @@ pub(all) enum Command {
   ListProjects
   ListFields
   GetField(field_id~ : String, project~ : String, issue_type~ : String)
-  Help
+  Help(command_name~ : String)
+  Describe(command_name~ : String)
 } derive(Show)
 
 ///|

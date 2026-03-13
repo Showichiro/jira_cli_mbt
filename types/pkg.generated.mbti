@@ -6,13 +6,19 @@ import {
 }
 
 // Values
+pub fn command_specs() -> Array[CommandSpec]
+
 pub fn default_detail_issue_fields() -> Array[IssueField]
 
 pub fn default_list_issue_fields() -> Array[IssueField]
 
+pub fn find_command_spec(String) -> CommandSpec?
+
 pub fn parse_issue_field(String) -> Result[IssueField, String]
 
 pub fn parse_output_format(String) -> Result[OutputFormat, String]
+
+pub fn require_command_spec(String) -> Result[CommandSpec, String]
 
 // Errors
 
@@ -43,9 +49,28 @@ pub(all) enum Command {
   ListProjects
   ListFields
   GetField(field_id~ : String, project~ : String, issue_type~ : String)
-  Help
+  Help(command_name~ : String)
+  Describe(command_name~ : String)
 }
 pub impl Show for Command
+
+pub(all) struct CommandFlagSpec {
+  name : String
+  value_name : String
+  description : String
+  required : Bool
+  repeatable : Bool
+  default_value : String
+  aliases : Array[String]
+}
+pub impl Show for CommandFlagSpec
+
+pub(all) struct CommandPositionalSpec {
+  name : String
+  description : String
+  required : Bool
+}
+pub impl Show for CommandPositionalSpec
 
 pub(all) struct CommandRunResult {
   stdout : String
@@ -54,6 +79,19 @@ pub(all) struct CommandRunResult {
 }
 pub impl Eq for CommandRunResult
 pub impl Show for CommandRunResult
+
+pub(all) struct CommandSpec {
+  name : String
+  summary : String
+  usage : String
+  aliases : Array[String]
+  positionals : Array[CommandPositionalSpec]
+  flags : Array[CommandFlagSpec]
+  output_formats : Array[OutputFormat]
+  notes : Array[String]
+  examples : Array[String]
+}
+pub impl Show for CommandSpec
 
 pub(all) struct Invocation {
   command : Command

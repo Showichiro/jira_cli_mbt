@@ -125,6 +125,22 @@ test "parse_request: supports format after command" {
 }
 
 ///|
+test "parse_request: preserves format for describe" {
+  inspect(
+    parse_request(["describe", "issue", "--format", "json"][:]),
+    content="Ok({command: Describe(command_name=\"issue\"), output_format: Json})",
+  )
+}
+
+///|
+test "parse_request: subcommand --help keeps requested format" {
+  inspect(
+    parse_request(["issue", "--help", "--format", "json"][:]),
+    content="Ok({command: Help(command_name=\"issue\"), output_format: Json})",
+  )
+}
+
+///|
 test "parse_request: rejects missing format value" {
   inspect(
     parse_request(["issues", "--format"][:]),

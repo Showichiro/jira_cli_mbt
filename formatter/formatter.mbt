@@ -494,21 +494,236 @@ pub fn format_error_for_output(
 }
 
 ///|
-pub fn format_usage() -> String {
+fn yes_no(value : Bool) -> String {
+  if value {
+    "yes"
+  } else {
+    "no"
+  }
+}
+
+///|
+fn default_label(value : String) -> String {
+  if value.length() == 0 {
+    "-"
+  } else {
+    value
+  }
+}
+
+///|
+fn format_names(values : Array[String]) -> String {
+  if values.is_empty() {
+    "none"
+  } else {
+    values.join(", ")
+  }
+}
+
+///|
+fn format_output_formats(formats : Array[@types.OutputFormat]) -> String {
+  format_names(formats.map(fn(format) { format.name() }))
+}
+
+///|
+fn command_positional_json(spec : @types.CommandPositionalSpec) -> String {
+  json_object([
+    ("name", json_string(spec.name)),
+    ("description", json_string(spec.description)),
+    ("required", json_bool(spec.required)),
+  ])
+}
+
+///|
+fn command_flag_json(spec : @types.CommandFlagSpec) -> String {
+  json_object([
+    ("name", json_string(spec.name)),
+    ("value_name", json_string(spec.value_name)),
+    ("description", json_string(spec.description)),
+    ("required", json_bool(spec.required)),
+    ("repeatable", json_bool(spec.repeatable)),
+    ("default_value", json_string(spec.default_value)),
+    ("aliases", json_array(spec.aliases.map(json_string))),
+  ])
+}
+
+///|
+fn command_spec_json(spec : @types.CommandSpec) -> String {
+  json_object([
+    ("name", json_string(spec.name)),
+    ("summary", json_string(spec.summary)),
+    ("usage", json_string("jira-cli " + spec.usage)),
+    ("aliases", json_array(spec.aliases.map(json_string))),
+    ("positionals", json_array(spec.positionals.map(command_positional_json))),
+    ("flags", json_array(spec.flags.map(command_flag_json))),
+    (
+      "output_formats",
+      json_array(
+        spec.output_formats.map(fn(format) { json_string(format.name()) }),
+      ),
+    ),
+    (
+      "default_output_format",
+      json_string(if spec.output_formats.is_empty() { "" } else { "table" }),
+    ),
+    ("notes", json_array(spec.notes.map(json_string))),
+    ("examples", json_array(spec.examples.map(json_string))),
+  ])
+}
+
+///|
+fn format_command_description_tsv(spec : @types.CommandSpec) -> String {
+  let rows : Array[Array[String]] = [
+    ["command", "name", spec.name, "", "", "", "Canonical command name"],
+    ["command", "summary", spec.summary, "", "", "", ""],
+    ["command", "usage", "jira-cli " + spec.usage, "", "", "", ""],
+  ]
+  for alias_name in spec.aliases {
+    rows.push(["alias", "command", alias_name, "", "", "", ""])
+  }
+  for positional in spec.positionals {
+    rows.push([
+      "positional",
+      positional.name,
+      "",
+      yes_no(positional.required),
+      "no",
+      "",
+      positional.description,
+    ])
+  }
+  for flag in spec.flags {
+    rows.push([
+      "flag",
+      flag.name,
+      flag.value_name,
+      yes_no(flag.required),
+      yes_no(flag.repeatable),
+      flag.default_value,
+      flag.description,
+    ])
+    for flag_alias in flag.aliases {
+      rows.push(["flag_alias", flag.name, flag_alias, "", "", "", ""])
+    }
+  }
+  for format in spec.output_formats {
+    rows.push(["output_format", format.name(), "", "", "", "", ""])
+  }
+  if not(spec.output_formats.is_empty()) {
+    rows.push(["command", "default_output_format", "table", "", "", "", ""])
+  }
+  for note in spec.notes {
+    rows.push(["note", "", note, "", "", "", ""])
+  }
+  for example in spec.examples {
+    rows.push(["example", "", example, "", "", "", ""])
+  }
   [
-    "Jira CLI (MoonBit)", "", "Usage: jira-cli <command> [options]", "Alias: jira-cli-mbt <command> [options]",
-    "", "Global options:", "  --format    table | tsv | json (read-only commands, default: table)",
-    "", "Commands:", "  config      Set Jira configuration", "              --base-url <url> --email <email> --api-token <token>",
-    "  issues      List assigned issues (default JQL)", "              [--jql <jql>] [--fields <field,...>]",
-    "  issue       Get issue details", "              <key> [--fields <field,...>]",
-    "              fields: key,summary,status,assignee,type,priority,description,customfield_<id>",
-    "  create      Create a new issue", "              --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...",
-    "  update      Update an existing issue", "              <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...",
-    "  transition  Transition issue status", "              --key <key> --status <status>",
-    "  comment     Add comment to issue", "              --key <key> --text <text>",
-    "  assign      Assign issue to user", "              --key <key> --email <email>",
-    "  search      Search issues with JQL", "              --jql <jql>", "  fields      List custom fields",
-    "              [customfield_XXXXX]  Show field details and options", "  projects    List all projects",
-    "  help        Show this help message",
+    format_tsv_row([
+      "section", "name", "value", "required", "repeatable", "default_value", "description",
+    ]),
+    ..rows.map(format_tsv_row),
   ].join("\n")
+}
+
+///|
+pub fn format_command_help(spec : @types.CommandSpec) -> String {
+  let lines : Array[String] = [
+    spec.name + " - " + spec.summary,
+    "",
+    "Usage:",
+    "  jira-cli " + spec.usage,
+  ]
+  if not(spec.aliases.is_empty()) {
+    lines.push("")
+    lines.push("Aliases:")
+    lines.push("  " + spec.aliases.join(", "))
+  }
+  if not(spec.positionals.is_empty()) {
+    lines.push("")
+    lines.push("Positional arguments:")
+    let headers = ["NAME", "REQUIRED", "DESCRIPTION"]
+    let widths = [18, 8, 56]
+    let rows = spec.positionals.map(fn(positional) {
+      [
+        positional.name,
+        yes_no(positional.required),
+        truncate(positional.description, 56),
+      ]
+    })
+    lines.push(format_table(headers, rows, widths))
+  }
+  if not(spec.flags.is_empty()) {
+    lines.push("")
+    lines.push("Flags:")
+    let headers = [
+      "FLAG", "VALUE", "REQUIRED", "REPEAT", "DEFAULT", "DESCRIPTION",
+    ]
+    let widths = [14, 24, 8, 6, 28, 44]
+    let rows = spec.flags.map(fn(flag) {
+      [
+        flag.name,
+        "<" + flag.value_name + ">",
+        yes_no(flag.required),
+        yes_no(flag.repeatable),
+        truncate(default_label(flag.default_value), 28),
+        truncate(flag.description, 44),
+      ]
+    })
+    lines.push(format_table(headers, rows, widths))
+  }
+  if not(spec.output_formats.is_empty()) {
+    lines.push("")
+    lines.push("Output formats:")
+    lines.push(
+      "  " + format_output_formats(spec.output_formats) + " (default: table)",
+    )
+  }
+  if not(spec.notes.is_empty()) {
+    lines.push("")
+    lines.push("Notes:")
+    for note in spec.notes {
+      lines.push("  - " + note)
+    }
+  }
+  if not(spec.examples.is_empty()) {
+    lines.push("")
+    lines.push("Examples:")
+    for example in spec.examples {
+      lines.push("  " + example)
+    }
+  }
+  lines.join("\n")
+}
+
+///|
+pub fn format_command_description_for_output(
+  spec : @types.CommandSpec,
+  output_format : @types.OutputFormat,
+) -> String {
+  match output_format {
+    @types.Table => format_command_help(spec)
+    @types.Tsv => format_command_description_tsv(spec)
+    @types.Json =>
+      json_envelope("command_description", "command", command_spec_json(spec))
+  }
+}
+
+///|
+pub fn format_usage() -> String {
+  let lines : Array[String] = [
+    "Jira CLI (MoonBit)", "", "Usage: jira-cli <command> [options]", "Alias: jira-cli-mbt <command> [options]",
+    "", "Global options:", "  --format    table | tsv | json (supported by read-only commands and describe, default: table)",
+    "", "Commands:",
+  ]
+  for spec in @types.command_specs() {
+    lines.push("  " + pad_right(spec.name, 11) + " " + spec.summary)
+    lines.push("              " + spec.usage)
+  }
+  lines.push("")
+  lines.push("Run `jira-cli help <command>` for per-command help.")
+  lines.push(
+    "Run `jira-cli describe <command> --format json` for machine-readable metadata.",
+  )
+  lines.join("\n")
 }

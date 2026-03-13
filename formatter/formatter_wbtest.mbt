@@ -247,32 +247,72 @@ test "format_usage: shows installed binary names" {
       #|Alias: jira-cli-mbt <command> [options]
       #|
       #|Global options:
-      #|  --format    table | tsv | json (read-only commands, default: table)
+      #|  --format    table | tsv | json (supported by read-only commands and describe, default: table)
       #|
       #|Commands:
       #|  config      Set Jira configuration
-      #|              --base-url <url> --email <email> --api-token <token>
+      #|              config --base-url <url> --email <email> --api-token <token>
       #|  issues      List assigned issues (default JQL)
-      #|              [--jql <jql>] [--fields <field,...>]
+      #|              issues [--jql <jql>] [--fields <field,...>] [--format <table|tsv|json>]
       #|  issue       Get issue details
-      #|              <key> [--fields <field,...>]
-      #|              fields: key,summary,status,assignee,type,priority,description,customfield_<id>
+      #|              issue <key> [--fields <field,...>] [--format <table|tsv|json>]
       #|  create      Create a new issue
-      #|              --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
+      #|              create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]...
       #|  update      Update an existing issue
-      #|              <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
+      #|              update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]...
       #|  transition  Transition issue status
-      #|              --key <key> --status <status>
+      #|              transition --key <key> --status <status>
       #|  comment     Add comment to issue
-      #|              --key <key> --text <text>
+      #|              comment --key <key> --text <text>
       #|  assign      Assign issue to user
-      #|              --key <key> --email <email>
+      #|              assign --key <key> --email <email>
       #|  search      Search issues with JQL
-      #|              --jql <jql>
-      #|  fields      List custom fields
-      #|              [customfield_XXXXX]  Show field details and options
+      #|              search --jql <jql> [--format <table|tsv|json>]
       #|  projects    List all projects
-      #|  help        Show this help message
+      #|              projects [--format <table|tsv|json>]
+      #|  fields      List custom fields or inspect one field
+      #|              fields [customfield_<id>] [--project <key>] [--type <type>] [--format <table|tsv|json>]
+      #|  help        Show general help or help for one command
+      #|              help [command]
+      #|  describe    Describe one command for humans or agents
+      #|              describe <command> [--format <table|tsv|json>]
+      #|
+      #|Run `jira-cli help <command>` for per-command help.
+      #|Run `jira-cli describe <command> --format json` for machine-readable metadata.
+    ),
+  )
+}
+
+///|
+test "format_command_help: issue includes output formats and notes" {
+  inspect(
+    format_command_help(@types.require_command_spec("issue").unwrap()),
+    content=(
+      #|issue - Get issue details
+      #|
+      #|Usage:
+      #|  jira-cli issue <key> [--fields <field,...>] [--format <table|tsv|json>]
+      #|
+      #|Positional arguments:
+      #|NAME                REQUIRED  DESCRIPTION                                             
+      #|------------------  --------  --------------------------------------------------------
+      #|key                 yes       Issue key (for example PROJ-123)                        
+      #|
+      #|Flags:
+      #|FLAG            VALUE                     REQUIRED  REPEAT  DEFAULT                       DESCRIPTION                                 
+      #|--------------  ------------------------  --------  ------  ----------------------------  --------------------------------------------
+      #|--fields        <field,...>               no        no      key,type,status,priority,...  Comma-separated list of fields to display   
+      #|
+      #|Output formats:
+      #|  table, tsv, json (default: table)
+      #|
+      #|Notes:
+      #|  - Accepted fields: key,summary,status,assignee,type,priority,description,customfield_<id>
+      #|  - Field aliases: type, issue_type, issuetype
+      #|
+      #|Examples:
+      #|  jira-cli issue PROJ-123
+      #|  jira-cli issue PROJ-123 --fields key,status,assignee,summary --format json
     ),
   )
 }

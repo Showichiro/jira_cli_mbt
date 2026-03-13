@@ -6,6 +6,10 @@ import {
 }
 
 // Values
+pub fn format_command_description_for_output(@types.CommandSpec, @types.OutputFormat) -> String
+
+pub fn format_command_help(@types.CommandSpec) -> String
+
 pub fn format_error_for_output(@types.CliErrorCategory, String, @types.OutputFormat, usage? : String) -> String
 
 pub fn format_field_detail(@types.JiraFieldDetail) -> String

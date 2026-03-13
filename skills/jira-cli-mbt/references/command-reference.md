@@ -14,7 +14,7 @@ The config file lives at `~/.config/jira_cli_mbt/config.json`.
 
 ## Output formats
 
-Read-only commands support a global `--format table|tsv|json` option.
+Read-only commands and `describe` support a global `--format table|tsv|json` option.
 
 - `table`: default human-readable output
 - `tsv`: tab-separated output for shell pipelines
@@ -41,6 +41,24 @@ Stable exit codes:
 - `3`: not found
 - `4`: config or authentication error
 - `5`: validation / conflict error
+
+## Introspection Commands
+
+Show top-level help or one command's help:
+
+```sh
+jira-cli help
+jira-cli help issue
+jira-cli issue --help
+```
+
+Describe a command in a machine-readable form:
+
+```sh
+jira-cli describe issue --format json
+```
+
+`describe` returns the command's positional arguments, flags, defaults, aliases, and supported output formats.
 
 ## Read-Only Commands
 
@@ -161,7 +179,7 @@ jira-cli assign --key APP-123 --email user@example.com
 ## Option Behavior
 
 - `issue` and `issues` accept `key`, `summary`, `status`, `assignee`, `type`, `priority`, `description`, and `customfield_<id>` in `--fields`.
-- Read-only commands accept `--format table|tsv|json`. In `json` mode, values are not truncated and the response includes a stable `schema_version`.
+- Read-only commands and `describe` accept `--format table|tsv|json`. In `json` mode, values are not truncated and the response includes a stable `schema_version`.
 - `type`, `issue_type`, and `issuetype` are equivalent field aliases.
 - Duplicate entries in `--fields` are de-duplicated.
 - `issues` and `search` currently request up to 20 results.
@@ -169,6 +187,7 @@ jira-cli assign --key APP-123 --email user@example.com
 - `--set` only accepts `customfield_*` keys. Duplicate `--set` keys are allowed and the last value wins.
 - If a `--set` value is all digits, the CLI sends `{ "id": "<value>" }` to Jira. Use this for select-like fields when `fields <id> --project <KEY> --type <NAME>` returns option IDs.
 - Descriptions and comments are sent as Jira ADF text generated from plain text input.
+- `help <command>` and `<command> --help` are equivalent human-readable entry points.
 
 ## Recovery Notes
 

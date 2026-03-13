@@ -60,3 +60,16 @@ test "jira issue field_value reads requested field" {
     "Platform Team",
   )
 }
+
+///|
+test "command specs resolve canonical names and aliases" {
+  let help_spec = @types.require_command_spec("--help").unwrap()
+  assert_eq(help_spec.name, "help")
+
+  let describe_spec = @types.require_command_spec("describe").unwrap()
+  assert_eq(describe_spec.name, "describe")
+  assert_eq(
+    describe_spec.output_formats.map(fn(format) { format.name() }).join(","),
+    "table,tsv,json",
+  )
+}
