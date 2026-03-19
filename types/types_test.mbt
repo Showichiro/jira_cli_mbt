@@ -2,6 +2,7 @@
 test "parse_issue_field supports aliases" {
   inspect(@types.parse_issue_field("type"), content="Ok(IssueType)")
   inspect(@types.parse_issue_field("issuetype"), content="Ok(IssueType)")
+  inspect(@types.parse_issue_field("parent"), content="Ok(Parent)")
   inspect(
     @types.parse_issue_field("customfield_12345"),
     content="Ok(Custom(\"customfield_12345\"))",
@@ -48,12 +49,14 @@ test "jira issue field_value reads requested field" {
     summary: "Fix bug",
     status: "Open",
     assignee: "Alice",
+    parent: "EPIC-1",
     issue_type: "Bug",
     priority: "High",
     description: "Details",
     custom_fields: { "customfield_12345": "Platform Team" },
   }
   assert_eq(issue.field_value(@types.Assignee), "Alice")
+  assert_eq(issue.field_value(@types.Parent), "EPIC-1")
   assert_eq(issue.field_value(@types.Description), "Details")
   assert_eq(
     issue.field_value(@types.Custom("customfield_12345")),
@@ -115,6 +118,7 @@ test "command specs resolve canonical names and aliases" {
     "table,tsv,json",
   )
   assert_true(create_spec.flags.any(fn(flag) { flag.name == "--dry-run" }))
+  assert_true(create_spec.flags.any(fn(flag) { flag.name == "--parent" }))
   assert_true(create_spec.flags.any(fn(flag) { flag.name == "--set-json" }))
 
   let issue_group_spec = @types.require_command_spec("issue").unwrap()
@@ -126,5 +130,6 @@ test "command specs resolve canonical names and aliases" {
     "table,tsv,json",
   )
   assert_true(update_spec.flags.any(fn(flag) { flag.name == "--dry-run" }))
+  assert_true(update_spec.flags.any(fn(flag) { flag.name == "--parent" }))
   assert_true(update_spec.flags.any(fn(flag) { flag.name == "--set-json" }))
 }

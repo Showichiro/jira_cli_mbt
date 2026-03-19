@@ -11,6 +11,7 @@ pub(all) enum IssueField {
   Summary
   Status
   Assignee
+  Parent
   IssueType
   Priority
   Description
@@ -86,6 +87,7 @@ pub fn parse_issue_field(name : String) -> Result[IssueField, String] {
     "summary" => Ok(Summary)
     "status" => Ok(Status)
     "assignee" => Ok(Assignee)
+    "parent" => Ok(Parent)
     "type" | "issue_type" | "issuetype" => Ok(IssueType)
     "priority" => Ok(Priority)
     "description" => Ok(Description)
@@ -102,6 +104,7 @@ pub fn IssueField::api_name(self : IssueField) -> String {
     Summary => "summary"
     Status => "status"
     Assignee => "assignee"
+    Parent => "parent"
     IssueType => "issuetype"
     Priority => "priority"
     Description => "description"
@@ -116,6 +119,7 @@ pub fn IssueField::list_header(self : IssueField) -> String {
     Summary => "SUMMARY"
     Status => "STATUS"
     Assignee => "ASSIGNEE"
+    Parent => "PARENT"
     IssueType => "TYPE"
     Priority => "PRIORITY"
     Description => "DESCRIPTION"
@@ -130,6 +134,7 @@ pub fn IssueField::detail_label(self : IssueField) -> String {
     Summary => "Summary"
     Status => "Status"
     Assignee => "Assignee"
+    Parent => "Parent"
     IssueType => "Type"
     Priority => "Priority"
     Description => "Description"
@@ -144,6 +149,7 @@ pub fn IssueField::table_width(self : IssueField) -> Int {
     Summary => 40
     Status => 15
     Assignee => 20
+    Parent => 14
     IssueType => 12
     Priority => 10
     Description => 40
@@ -157,6 +163,7 @@ pub(all) struct JiraIssue {
   summary : String
   status : String
   assignee : String
+  parent : String
   issue_type : String
   priority : String
   description : String
@@ -170,6 +177,7 @@ pub fn JiraIssue::field_value(self : JiraIssue, field : IssueField) -> String {
     Summary => self.summary
     Status => self.status
     Assignee => self.assignee
+    Parent => self.parent
     IssueType => self.issue_type
     Priority => self.priority
     Description => self.description
@@ -225,6 +233,7 @@ pub(all) enum Command {
     summary~ : String,
     issue_type~ : String,
     description~ : String,
+    parent~ : String,
     custom_fields~ : Map[String, CustomFieldInput],
     dry_run~ : Bool
   )
@@ -235,6 +244,7 @@ pub(all) enum Command {
     priority~ : String,
     issue_type~ : String,
     labels~ : String,
+    parent~ : String,
     assignee~ : String,
     custom_fields~ : Map[String, CustomFieldInput],
     dry_run~ : Bool

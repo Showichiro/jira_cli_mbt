@@ -58,8 +58,8 @@ pub(all) enum Command {
   Config(base_url~ : String, email~ : String, api_token~ : String, api_token_stdin~ : Bool)
   ListIssues(jql~ : String, fields~ : Array[IssueField], page_request~ : PageRequest)
   GetIssue(key~ : String, fields~ : Array[IssueField])
-  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, custom_fields~ : Map[String, CustomFieldInput], dry_run~ : Bool)
-  UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, assignee~ : String, custom_fields~ : Map[String, CustomFieldInput], dry_run~ : Bool)
+  CreateIssue(project~ : String, summary~ : String, issue_type~ : String, description~ : String, parent~ : String, custom_fields~ : Map[String, CustomFieldInput], dry_run~ : Bool)
+  UpdateIssue(key~ : String, summary~ : String, description~ : String, priority~ : String, issue_type~ : String, labels~ : String, parent~ : String, assignee~ : String, custom_fields~ : Map[String, CustomFieldInput], dry_run~ : Bool)
   Transition(key~ : String, status~ : String)
   Comment(key~ : String, text~ : String)
   Assign(key~ : String, email~ : String)
@@ -148,6 +148,7 @@ pub(all) enum IssueField {
   Summary
   Status
   Assignee
+  Parent
   IssueType
   Priority
   Description
@@ -201,6 +202,7 @@ pub(all) struct JiraIssue {
   summary : String
   status : String
   assignee : String
+  parent : String
   issue_type : String
   priority : String
   description : String

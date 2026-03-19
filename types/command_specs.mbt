@@ -36,7 +36,7 @@ fn global_output_formats() -> Array[OutputFormat] {
 
 ///|
 fn issues_field_note() -> String {
-  "Accepted fields: key,summary,status,assignee,type,priority,description,customfield_<id>"
+  "Accepted fields: key,summary,status,assignee,parent,type,priority,description,customfield_<id>"
 }
 
 ///|
@@ -288,7 +288,7 @@ fn create_command_spec() -> CommandSpec {
   {
     name: "issue create",
     summary: "Create a new issue",
-    usage: "issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]",
+    usage: "issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--parent <key|id>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]",
     aliases: ["create"],
     positionals: [],
     flags: [
@@ -329,6 +329,15 @@ fn create_command_spec() -> CommandSpec {
         aliases: [],
       },
       {
+        name: "--parent",
+        value_name: "key|id",
+        description: "Parent issue key or numeric id",
+        required: false,
+        repeatable: false,
+        default_value: None,
+        aliases: [],
+      },
+      {
         name: "--set",
         value_name: "customfield_<id>=<value>",
         description: "Set a custom field value",
@@ -358,13 +367,14 @@ fn create_command_spec() -> CommandSpec {
     ],
     output_formats: global_output_formats(),
     notes: [
-      "--set only accepts customfield_* keys and remains a convenience shortcut",
+      "Use --parent for Jira's standard parent field", "--set only accepts customfield_* keys and remains a convenience shortcut",
       "--set-json accepts a JSON object mapping customfield_* keys to JSON values",
       "Prefer --set-json for explicit typed values such as {\"id\":\"10401\"}", "If a --set value is all digits, the CLI preserves the legacy convenience behavior and sends it as an option id object",
       "--dry-run returns a structured preview and does not require Jira config",
     ],
     examples: [
       "jira-cli issue create --project APP --summary \"Fix login bug\" --type Bug",
+      "jira-cli issue create --project APP --summary \"Follow up rollout\" --parent EPIC-123",
       "jira-cli issue create --project APP --summary \"Provision access\" --set customfield_10001=10401",
       "jira-cli issue create --project APP --summary \"Provision access\" --set-json '{\"customfield_10001\":{\"id\":\"10401\"},\"customfield_10002\":\"Platform Team\"}'",
       "jira-cli issue create --project APP --summary \"Provision access\" --dry-run --format json",
@@ -377,7 +387,7 @@ fn update_command_spec() -> CommandSpec {
   {
     name: "issue update",
     summary: "Update an existing issue",
-    usage: "issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]",
+    usage: "issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--parent <key|id>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]",
     aliases: ["update"],
     positionals: [
       { name: "key", description: "Issue key to update", required: true },
@@ -429,6 +439,15 @@ fn update_command_spec() -> CommandSpec {
         aliases: [],
       },
       {
+        name: "--parent",
+        value_name: "key|id",
+        description: "Parent issue key or numeric id",
+        required: false,
+        repeatable: false,
+        default_value: None,
+        aliases: [],
+      },
+      {
         name: "--assignee",
         value_name: "email",
         description: "Assignee email address",
@@ -468,12 +487,13 @@ fn update_command_spec() -> CommandSpec {
     output_formats: global_output_formats(),
     notes: [
       "At least one update field is required", "update may partially succeed if assignee changes fail after field updates",
-      "--set only accepts customfield_* keys and remains a convenience shortcut",
+      "Use --parent for Jira's standard parent field", "--set only accepts customfield_* keys and remains a convenience shortcut",
       "--set-json accepts a JSON object mapping customfield_* keys to JSON values",
       "Prefer --set-json for explicit typed values such as {\"id\":\"10401\"}", "--dry-run returns a structured preview and does not require Jira config",
     ],
     examples: [
-      "jira-cli issue update APP-123 --priority High --labels backend,urgent", "jira-cli issue update APP-123 --summary \"Refine rollout plan\" --set customfield_10001=10401",
+      "jira-cli issue update APP-123 --priority High --labels backend,urgent", "jira-cli issue update APP-123 --parent EPIC-123",
+      "jira-cli issue update APP-123 --summary \"Refine rollout plan\" --set customfield_10001=10401",
       "jira-cli issue update APP-123 --set-json '{\"customfield_10001\":{\"id\":\"10401\"},\"customfield_10002\":[\"Backend\",\"Urgent\"]}'",
       "jira-cli issue update APP-123 --summary \"Refine rollout plan\" --assignee user@example.com --dry-run --format json",
     ],

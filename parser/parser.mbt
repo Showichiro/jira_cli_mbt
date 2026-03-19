@@ -229,6 +229,7 @@ let create_flags : Map[String, String] = {
   "--summary": "summary",
   "--type": "issue_type",
   "--description": "description",
+  "--parent": "parent",
 }
 
 ///|
@@ -701,6 +702,7 @@ fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
             (Some(project), Some(summary)) => {
               let issue_type = flags.get("issue_type").unwrap_or("Task")
               let description = flags.get("description").unwrap_or("")
+              let parent = flags.get("parent").unwrap_or("")
               let custom_fields : Map[String, @types.CustomFieldInput] = {}
               for entry in set_entries {
                 custom_fields[entry.0] = entry.1
@@ -711,6 +713,7 @@ fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
                   summary~,
                   issue_type~,
                   description~,
+                  parent~,
                   custom_fields~,
                   dry_run~,
                 ),
@@ -718,7 +721,7 @@ fn parse_create(args : ArrayView[String]) -> Result[@types.Command, String] {
             }
             _ =>
               Err(
-                "Usage: create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--set-json <json-object>] [--dry-run]",
+                "Usage: create --project <key> --summary <text> [--type <type>] [--description <text>] [--parent <key|id>] [--set <field=value>]... [--set-json <json-object>] [--dry-run]",
               )
           }
         Err(message) => Err(message)
@@ -769,11 +772,12 @@ let update_flags : Map[String, String] = {
   "--priority": "priority",
   "--type": "issue_type",
   "--labels": "labels",
+  "--parent": "parent",
   "--assignee": "assignee",
 }
 
 ///|
-let update_usage : String = "Usage: update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run]"
+let update_usage : String = "Usage: update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--parent <key|id>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run]"
 
 ///|
 let get_field_flags : Map[String, String] = {
@@ -817,6 +821,7 @@ fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {
           let priority = flags.get("priority").unwrap_or("")
           let issue_type = flags.get("issue_type").unwrap_or("")
           let labels = flags.get("labels").unwrap_or("")
+          let parent = flags.get("parent").unwrap_or("")
           let assignee = flags.get("assignee").unwrap_or("")
           let custom_fields : Map[String, @types.CustomFieldInput] = {}
           for entry in set_entries {
@@ -827,6 +832,7 @@ fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {
             priority.length() > 0 ||
             issue_type.length() > 0 ||
             labels.length() > 0 ||
+            parent.length() > 0 ||
             assignee.length() > 0 ||
             custom_fields.length() > 0 else {
             return Err(
@@ -841,6 +847,7 @@ fn parse_update(args : ArrayView[String]) -> Result[@types.Command, String] {
               priority~,
               issue_type~,
               labels~,
+              parent~,
               assignee~,
               custom_fields~,
               dry_run~,

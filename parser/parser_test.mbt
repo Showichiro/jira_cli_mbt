@@ -166,6 +166,14 @@ test "parse_args: get issue with custom fields" {
 }
 
 ///|
+test "parse_args: get issue with parent field" {
+  inspect(
+    @parser.parse_args(["issue", "PROJ-123", "--fields", "parent"][:]),
+    content="Ok(GetIssue(key=\"PROJ-123\", fields=[Parent]))",
+  )
+}
+
+///|
 test "parse_args: issue without subcommand shows group help" {
   inspect(
     @parser.parse_args(["issue"][:]),
@@ -236,6 +244,7 @@ fn assert_create_issue_result(
   summary : String,
   issue_type : String,
   description : String,
+  parent : String,
   custom_fields : Map[String, String],
   dry_run : Bool,
 ) -> Unit raise {
@@ -246,6 +255,7 @@ fn assert_create_issue_result(
         summary=actual_summary,
         issue_type=actual_issue_type,
         description=actual_description,
+        parent=actual_parent,
         custom_fields=actual_custom_fields,
         dry_run=actual_dry_run
       )
@@ -254,6 +264,7 @@ fn assert_create_issue_result(
       assert_eq(actual_summary, summary)
       assert_eq(actual_issue_type, issue_type)
       assert_eq(actual_description, description)
+      assert_eq(actual_parent, parent)
       assert_eq(actual_dry_run, dry_run)
       assert_custom_field_display_values(actual_custom_fields, custom_fields)
     }
@@ -270,6 +281,7 @@ fn assert_update_issue_result(
   priority : String,
   issue_type : String,
   labels : String,
+  parent : String,
   assignee : String,
   custom_fields : Map[String, String],
   dry_run : Bool,
@@ -283,6 +295,7 @@ fn assert_update_issue_result(
         priority=actual_priority,
         issue_type=actual_issue_type,
         labels=actual_labels,
+        parent=actual_parent,
         assignee=actual_assignee,
         custom_fields=actual_custom_fields,
         dry_run=actual_dry_run
@@ -294,6 +307,7 @@ fn assert_update_issue_result(
       assert_eq(actual_priority, priority)
       assert_eq(actual_issue_type, issue_type)
       assert_eq(actual_labels, labels)
+      assert_eq(actual_parent, parent)
       assert_eq(actual_assignee, assignee)
       assert_eq(actual_dry_run, dry_run)
       assert_custom_field_display_values(actual_custom_fields, custom_fields)
@@ -312,6 +326,7 @@ test "parse_args: noun-verb issue create" {
     "Fix bug",
     "Task",
     "",
+    "",
     {},
     false,
   )
@@ -326,6 +341,7 @@ test "parse_args: legacy create issue" {
     "PROJ",
     "Fix bug",
     "Task",
+    "",
     "",
     {},
     false,
@@ -345,6 +361,7 @@ test "parse_args: create with type and description" {
     "Fix bug",
     "Bug",
     "Details",
+    "",
     {},
     false,
   )
@@ -361,6 +378,7 @@ test "parse_args: create with one --set flag" {
     "PROJ",
     "Fix bug",
     "Task",
+    "",
     "",
     { "customfield_12345": "High" },
     false,
@@ -380,6 +398,7 @@ test "parse_args: create with multiple --set flags" {
     "Fix bug",
     "Task",
     "",
+    "",
     { "customfield_12345": "High", "customfield_67890": "Team A" },
     false,
   )
@@ -396,6 +415,7 @@ test "parse_args: create --set value contains equals sign" {
     "PROJ",
     "Fix bug",
     "Task",
+    "",
     "",
     { "customfield_123": "a=b" },
     false,
@@ -439,6 +459,7 @@ test "parse_args: create --set duplicate key last wins" {
     "Fix bug",
     "Task",
     "",
+    "",
     { "customfield_123": "second" },
     false,
   )
@@ -481,6 +502,7 @@ test "parse_args: create --set multi-word value" {
     "Fix bug",
     "Task",
     "",
+    "",
     { "customfield_123": "hello world" },
     false,
   )
@@ -499,6 +521,7 @@ test "parse_args: create --set multi-word value followed by another flag" {
     "Fix bug",
     "Task",
     "",
+    "",
     { "customfield_123": "hello world", "customfield_456": "bar" },
     false,
   )
@@ -516,6 +539,7 @@ test "parse_args: create with --set-json supports multiple fields" {
     "PROJ",
     "Fix bug",
     "Task",
+    "",
     "",
     {
       "customfield_12345": "{\"id\":\"10401\"}",
@@ -564,6 +588,7 @@ test "parse_args: create with mixed --set and --set-json keeps last value" {
     "Fix bug",
     "Task",
     "",
+    "",
     { "customfield_123": "{\"id\":\"10401\"}", "customfield_456": "Backend" },
     false,
   )
@@ -581,8 +606,28 @@ test "parse_args: create with dry-run" {
     "Fix bug",
     "Task",
     "",
+    "",
     {},
     true,
+  )
+}
+
+///|
+test "parse_args: create with parent" {
+  assert_create_issue_result(
+    @parser.parse_args(
+      [
+        "issue", "create", "--project", "PROJ", "--summary", "Fix bug", "--parent",
+        "EPIC-123",
+      ][:],
+    ),
+    "PROJ",
+    "Fix bug",
+    "Task",
+    "",
+    "EPIC-123",
+    {},
+    false,
   )
 }
 
@@ -700,6 +745,7 @@ test "parse_args: update with summary" {
     "",
     "",
     "",
+    "",
     {},
     false,
   )
@@ -718,6 +764,7 @@ test "parse_args: update with priority and labels" {
     "",
     "bug,urgent",
     "",
+    "",
     {},
     false,
   )
@@ -730,6 +777,7 @@ test "parse_args: update with assignee only" {
       ["update", "TEST-1", "--assignee", "user@example.com"][:],
     ),
     "TEST-1",
+    "",
     "",
     "",
     "",
@@ -756,6 +804,7 @@ test "parse_args: update with description and custom field" {
     "",
     "",
     "",
+    "",
     { "customfield_123": "value" },
     false,
   )
@@ -772,6 +821,7 @@ test "parse_args: update with type only" {
     "Bug",
     "",
     "",
+    "",
     {},
     false,
   )
@@ -783,8 +833,8 @@ test "parse_args: update with all flags" {
     @parser.parse_args(
       [
         "update", "TEST-1", "--summary", "title", "--description", "desc", "--priority",
-        "High", "--type", "Bug", "--labels", "bug", "--assignee", "a@b.com", "--set",
-        "customfield_123=val",
+        "High", "--type", "Bug", "--labels", "bug", "--parent", "EPIC-123", "--assignee",
+        "a@b.com", "--set", "customfield_123=val",
       ][:],
     ),
     "TEST-1",
@@ -793,6 +843,7 @@ test "parse_args: update with all flags" {
     "High",
     "Bug",
     "bug",
+    "EPIC-123",
     "a@b.com",
     { "customfield_123": "val" },
     false,
@@ -808,6 +859,7 @@ test "parse_args: update with --set-json supports multiple fields" {
       ][:],
     ),
     "TEST-1",
+    "",
     "",
     "",
     "",
@@ -835,8 +887,26 @@ test "parse_args: update with dry-run" {
     "",
     "",
     "",
+    "",
     {},
     true,
+  )
+}
+
+///|
+test "parse_args: update with parent only" {
+  assert_update_issue_result(
+    @parser.parse_args(["issue", "update", "TEST-1", "--parent", "EPIC-123"][:]),
+    "TEST-1",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "EPIC-123",
+    "",
+    {},
+    false,
   )
 }
 
