@@ -20,6 +20,29 @@ fn normalized_label_values(labels : String) -> Array[String] {
 }
 
 ///|
+fn is_numeric_issue_reference(value : String) -> Bool {
+  if value.length() == 0 {
+    return false
+  }
+  for i in 0..<value.length() {
+    let c = value[i].to_int().unsafe_to_char()
+    if c < '0' || c > '9' {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn parent_field_value(parent : String) -> @core.Any {
+  if is_numeric_issue_reference(parent) {
+    @core.from_entries([("id", @core.any(parent))])
+  } else {
+    @core.from_entries([("key", @core.any(parent))])
+  }
+}
+
+///|
 fn mutation_field_change(
   name : String,
   value : String,
@@ -42,6 +65,7 @@ fn create_issue_field_changes(
   summary : String,
   issue_type : String,
   description : String,
+  parent : String,
   custom_fields : Map[String, @types.CustomFieldInput],
 ) -> Array[@types.MutationFieldChange] {
   let changes : Array[@types.MutationFieldChange] = [
@@ -51,6 +75,9 @@ fn create_issue_field_changes(
   ]
   if description.length() > 0 {
     changes.push(mutation_field_change("description", description))
+  }
+  if parent.length() > 0 {
+    changes.push(mutation_field_change("parent", parent))
   }
   for entry in sorted_custom_field_entries(custom_fields) {
     changes.push(mutation_field_change(entry.0, entry.1.display_value()))
@@ -65,6 +92,7 @@ fn update_issue_field_changes(
   priority : String,
   issue_type : String,
   labels : String,
+  parent : String,
   assignee : String,
   custom_fields : Map[String, @types.CustomFieldInput],
 ) -> Array[@types.MutationFieldChange] {
@@ -85,6 +113,9 @@ fn update_issue_field_changes(
   if not(label_values.is_empty()) {
     changes.push(mutation_field_change("labels", label_values.join(",")))
   }
+  if parent.length() > 0 {
+    changes.push(mutation_field_change("parent", parent))
+  }
   if assignee.length() > 0 {
     changes.push(mutation_field_change("assignee", assignee))
   }
@@ -100,6 +131,7 @@ fn create_issue_field_entries(
   summary : String,
   issue_type : String,
   description : String,
+  parent : String,
   custom_fields : Map[String, @types.CustomFieldInput],
 ) -> Array[(String, @core.Any)] {
   [
@@ -108,6 +140,11 @@ fn create_issue_field_entries(
     ("issuetype", @core.from_entries([("name", @core.any(issue_type))])),
     ..if description.length() > 0 {
       [("description", build_adf_text(description))]
+    } else {
+      []
+    },
+    ..if parent.length() > 0 {
+      [("parent", parent_field_value(parent))]
     } else {
       []
     },
@@ -124,6 +161,7 @@ fn update_issue_field_entries(
   priority : String,
   issue_type : String,
   labels : String,
+  parent : String,
   custom_fields : Map[String, @types.CustomFieldInput],
 ) -> Array[(String, @core.Any)] {
   let field_entries : Array[(String, @core.Any)] = []
@@ -146,6 +184,9 @@ fn update_issue_field_entries(
   let label_values = normalized_label_values(labels)
   if not(label_values.is_empty()) {
     field_entries.push(("labels", @core.any(label_values)))
+  }
+  if parent.length() > 0 {
+    field_entries.push(("parent", parent_field_value(parent)))
   }
   for entry in sorted_custom_field_entries(custom_fields) {
     field_entries.push((entry.0, custom_field_value(entry.1)))
@@ -183,10 +224,11 @@ pub fn preview_create_issue(
   summary : String,
   issue_type : String,
   description : String,
+  parent : String,
   custom_fields : Map[String, @types.CustomFieldInput],
 ) -> @types.MutationReport {
   let field_changes = create_issue_field_changes(
-    project, summary, issue_type, description, custom_fields,
+    project, summary, issue_type, description, parent, custom_fields,
   )
   mutation_report(
     "issue create",
@@ -236,14 +278,15 @@ pub fn preview_update_issue(
   priority : String,
   issue_type : String,
   labels : String,
+  parent : String,
   assignee : String,
   custom_fields : Map[String, @types.CustomFieldInput],
 ) -> @types.MutationReport {
   let field_changes = update_issue_field_changes(
-    summary, description, priority, issue_type, labels, assignee, custom_fields,
+    summary, description, priority, issue_type, labels, parent, assignee, custom_fields,
   )
   let field_entries = update_issue_field_entries(
-    summary, description, priority, issue_type, labels, custom_fields,
+    summary, description, priority, issue_type, labels, parent, custom_fields,
   )
   let operations : Array[@types.MutationOperation] = []
   if not(field_entries.is_empty()) {

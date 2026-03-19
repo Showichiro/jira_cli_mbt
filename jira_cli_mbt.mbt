@@ -66,17 +66,18 @@ async fn execute_command(
       summary~,
       issue_type~,
       description~,
+      parent~,
       custom_fields~,
       dry_run~
     ) => {
       let report = if dry_run {
         @api.preview_create_issue(
-          project, summary, issue_type, description, custom_fields,
+          project, summary, issue_type, description, parent, custom_fields,
         )
       } else {
         let config = @config.load_config()
         @api.create_issue(
-          config, project, summary, issue_type, description, custom_fields,
+          config, project, summary, issue_type, description, parent, custom_fields,
         )
       }
       @formatter.format_mutation_report_for_output(report, output_format)
@@ -88,13 +89,15 @@ async fn execute_command(
       priority~,
       issue_type~,
       labels~,
+      parent~,
       assignee~,
       custom_fields~,
       dry_run~
     ) => {
       let report = if dry_run {
         @api.preview_update_issue(
-          key, summary, description, priority, issue_type, labels, assignee, custom_fields,
+          key, summary, description, priority, issue_type, labels, parent, assignee,
+          custom_fields,
         )
       } else {
         let config = @config.load_config()
@@ -106,6 +109,7 @@ async fn execute_command(
           priority~,
           issue_type~,
           labels~,
+          parent~,
           assignee~,
           custom_fields~,
         )

@@ -212,13 +212,14 @@ Legacy alias: `jira-cli issue PROJ-123`
 Create a new issue.
 
 ```sh
-jira-cli issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
+jira-cli issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--parent <key|id>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
 ```
 
 - `--project` — Project key (required)
 - `--summary` — Issue summary (required)
 - `--type` — Issue type (default: `Task`)
 - `--description` — Issue description
+- `--parent` — Parent issue key or numeric issue ID
 - `--set` — Convenience shortcut for simple custom field values (repeatable, format: `customfield_xxxxx=value`)
 - `--set-json` — Structured custom field payload as a JSON object keyed by `customfield_*`
 - `--dry-run` — Preview the request without calling Jira
@@ -228,11 +229,12 @@ Example:
 
 ```sh
 jira-cli issue create --project MYPROJ --summary "Fix login bug" --type Bug --description "Login fails on Safari"
+jira-cli issue create --project MYPROJ --summary "Implement child task" --parent EPIC-123
 jira-cli issue create --project MYPROJ --summary "Fix login bug" --dry-run --format json
 jira-cli issue create --project MYPROJ --summary "Provision access" --set-json '{"customfield_10001":{"id":"10401"},"customfield_10002":"Platform Team"}'
 ```
 
-Prefer `--set-json` for explicit typed values such as option IDs, arrays, or nested objects. `--set` remains available as a convenience shortcut, and purely numeric `--set` values still map to `{ "id": "<value>" }` for backward compatibility.
+Use `--parent` for Jira's standard parent field. Prefer `--set-json` for explicit typed values such as option IDs, arrays, or nested objects. `--set` remains available as a convenience shortcut, and purely numeric `--set` values still map to `{ "id": "<value>" }` for backward compatibility.
 
 Legacy alias: `jira-cli create`
 
@@ -241,7 +243,7 @@ Legacy alias: `jira-cli create`
 Update an existing issue.
 
 ```sh
-jira-cli issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
+jira-cli issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--parent <key|id>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
 ```
 
 - `<key>` — Issue key (required)
@@ -250,6 +252,7 @@ jira-cli issue update <key> [--summary <text>] [--description <text>] [--priorit
 - `--priority` — Priority name
 - `--type` — Issue type name
 - `--labels` — Comma-separated labels
+- `--parent` — Parent issue key or numeric issue ID
 - `--assignee` — Assignee email
 - `--set` — Convenience shortcut for simple custom field values (repeatable, format: `customfield_xxxxx=value`)
 - `--set-json` — Structured custom field payload as a JSON object keyed by `customfield_*`
@@ -262,11 +265,12 @@ Example:
 
 ```sh
 jira-cli issue update PROJ-123 --priority High --labels "backend,urgent"
+jira-cli issue update PROJ-123 --parent EPIC-123
 jira-cli issue update PROJ-123 --summary "Refine rollout plan" --assignee user@example.com --dry-run --format json
 jira-cli issue update PROJ-123 --set-json '{"customfield_10001":{"id":"10401"},"customfield_10002":["Backend","Urgent"]}'
 ```
 
-`--set` and `--set-json` both require `customfield_*` keys. If the same key appears multiple times across either flag, the last value wins.
+Use `--parent` for Jira's standard parent field. `--set` and `--set-json` both require `customfield_*` keys. If the same key appears multiple times across either flag, the last value wins.
 
 Legacy alias: `jira-cli update`
 
@@ -445,6 +449,7 @@ The `--fields` flag accepts the following field names (case-insensitive):
 | `priority` | Priority level |
 | `type` | Issue type (aliases: `issue_type`, `issuetype`) |
 | `assignee` | Assigned user |
+| `parent` | Parent issue key or ID |
 | `description` | Issue description |
 | `customfield_*` | Any custom field by ID (e.g. `customfield_10001`) |
 

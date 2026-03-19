@@ -145,10 +145,19 @@ fn extract_custom_fields(fields : @core.Any) -> Map[String, String] {
 fn parse_issue(data : @core.Any) -> @types.JiraIssue {
   let fields = data._get("fields")
   let description_obj = fields._get("description")
+  let parent_obj = fields._get("parent")
   let description = if @core.is_nullish(description_obj) {
     ""
   } else {
     extract_adf_text(description_obj)
+  }
+  let parent = {
+    let key = get_string(parent_obj, "key")
+    if key.length() > 0 {
+      key
+    } else {
+      get_string(parent_obj, "id")
+    }
   }
   {
     key: get_string(data, "key"),
@@ -159,6 +168,7 @@ fn parse_issue(data : @core.Any) -> @types.JiraIssue {
       "displayName",
       default="Unassigned",
     ),
+    parent,
     issue_type: get_string(fields._get("issuetype"), "name"),
     priority: get_string(fields._get("priority"), "name"),
     description,
@@ -532,17 +542,18 @@ pub async fn create_issue(
   summary : String,
   issue_type : String,
   description : String,
+  parent : String,
   custom_fields : Map[String, @types.CustomFieldInput],
 ) -> @types.MutationReport {
   let field_changes = create_issue_field_changes(
-    project, summary, issue_type, description, custom_fields,
+    project, summary, issue_type, description, parent, custom_fields,
   )
   let body = @core.from_entries([
     (
       "fields",
       @core.from_entries(
         create_issue_field_entries(
-          project, summary, issue_type, description, custom_fields,
+          project, summary, issue_type, description, parent, custom_fields,
         ),
       ),
     ),
@@ -560,14 +571,15 @@ pub async fn update_issue(
   priority~ : String,
   issue_type~ : String,
   labels~ : String,
+  parent~ : String,
   assignee~ : String,
   custom_fields~ : Map[String, @types.CustomFieldInput],
 ) -> @types.MutationReport {
   let field_changes = update_issue_field_changes(
-    summary, description, priority, issue_type, labels, assignee, custom_fields,
+    summary, description, priority, issue_type, labels, parent, assignee, custom_fields,
   )
   let field_entries = update_issue_field_entries(
-    summary, description, priority, issue_type, labels, custom_fields,
+    summary, description, priority, issue_type, labels, parent, custom_fields,
   )
   if not(field_entries.is_empty()) {
     let body = @core.from_entries([

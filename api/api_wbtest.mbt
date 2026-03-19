@@ -44,6 +44,7 @@ test "parse_issue with all fields" {
         ("summary", @core.any("Test summary")),
         ("status", @core.from_entries([("name", @core.any("In Progress"))])),
         ("assignee", @core.from_entries([("displayName", @core.any("Alice"))])),
+        ("parent", @core.from_entries([("key", @core.any("EPIC-1"))])),
         ("issuetype", @core.from_entries([("name", @core.any("Bug"))])),
         ("priority", @core.from_entries([("name", @core.any("High"))])),
         ("description", description),
@@ -56,6 +57,7 @@ test "parse_issue with all fields" {
   assert_eq(issue.summary, "Test summary")
   assert_eq(issue.status, "In Progress")
   assert_eq(issue.assignee, "Alice")
+  assert_eq(issue.parent, "EPIC-1")
   assert_eq(issue.issue_type, "Bug")
   assert_eq(issue.priority, "High")
   assert_eq(issue.description, "Test description")
@@ -196,11 +198,12 @@ test "requested_api_fields excludes key and dedups aliases" {
     requested_api_fields([
       @types.Key,
       @types.Summary,
+      @types.Parent,
       @types.IssueType,
       @types.IssueType,
       @types.Custom("customfield_12345"),
     ]),
-    content="[\"summary\", \"issuetype\", \"customfield_12345\"]",
+    content="[\"summary\", \"parent\", \"issuetype\", \"customfield_12345\"]",
   )
 }
 
@@ -257,17 +260,24 @@ test "issue_search_page_size keeps small single-page requests" {
 
 ///|
 test "preview_create_issue returns stable dry-run report" {
-  let report = preview_create_issue("APP", "Fix login bug", "Bug", "", {
-    "customfield_200": @types.custom_field_input_string("Zed"),
-    "customfield_100": @types.custom_field_input_string("Alpha"),
-  })
+  let report = preview_create_issue(
+    "APP",
+    "Fix login bug",
+    "Bug",
+    "",
+    "EPIC-1",
+    {
+      "customfield_200": @types.custom_field_input_string("Zed"),
+      "customfield_100": @types.custom_field_input_string("Alpha"),
+    },
+  )
   assert_eq(report.command, "issue create")
   assert_eq(report.status, @types.DryRun)
   assert_true(report.dry_run)
   assert_eq(report.project_key, "APP")
   assert_eq(
     report.field_changes.map(fn(change) { change.name }).join(","),
-    "project,summary,issue_type,customfield_100,customfield_200",
+    "project,summary,issue_type,parent,customfield_100,customfield_200",
   )
   assert_eq(report.operations.length(), 1)
   assert_eq(report.operations[0].status, @types.Planned)
@@ -282,6 +292,7 @@ test "preview_update_issue includes planned operations and normalized labels" {
     "High",
     "",
     "backend, urgent",
+    "EPIC-1",
     "user@example.com",
     { "customfield_10001": @types.custom_field_input_option_id("10401") },
   )
@@ -293,7 +304,7 @@ test "preview_update_issue includes planned operations and normalized labels" {
     report.field_changes
     .map(fn(change) { change.name + "=" + change.value })
     .join(","),
-    "summary=Refine rollout plan,priority=High,labels=backend,urgent,assignee=user@example.com,customfield_10001={\"id\":\"10401\"}",
+    "summary=Refine rollout plan,priority=High,labels=backend,urgent,parent=EPIC-1,assignee=user@example.com,customfield_10001={\"id\":\"10401\"}",
   )
   assert_eq(
     report.operations

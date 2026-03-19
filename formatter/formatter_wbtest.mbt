@@ -49,6 +49,7 @@ test "format_issue_list: single issue" {
       summary: "Fix bug",
       status: "Open",
       assignee: "Alice",
+      parent: "",
       issue_type: "Bug",
       priority: "High",
       description: "",
@@ -72,6 +73,7 @@ test "format_issue_detail" {
     summary: "Fix bug",
     status: "Open",
     assignee: "Alice",
+    parent: "",
     issue_type: "Bug",
     priority: "High",
     description: "Some description",
@@ -99,6 +101,7 @@ test "format_issue_list: custom fields" {
       summary: "Fix bug",
       status: "Open",
       assignee: "Alice",
+      parent: "",
       issue_type: "Bug",
       priority: "High",
       description: "",
@@ -122,6 +125,7 @@ test "format_issue_detail: custom field" {
     summary: "Fix bug",
     status: "Open",
     assignee: "Alice",
+    parent: "",
     issue_type: "Bug",
     priority: "High",
     description: "",
@@ -132,6 +136,28 @@ test "format_issue_detail: custom field" {
     content=(
       #|Key:         PROJ-1
       #|customfield_10001: Platform Team
+    ),
+  )
+}
+
+///|
+test "format_issue_detail: parent field" {
+  let issue : @types.JiraIssue = {
+    key: "PROJ-1",
+    summary: "Fix bug",
+    status: "Open",
+    assignee: "Alice",
+    parent: "EPIC-1",
+    issue_type: "Bug",
+    priority: "High",
+    description: "",
+    custom_fields: {},
+  }
+  inspect(
+    format_issue_detail(issue, [@types.Key, @types.Parent]),
+    content=(
+      #|Key:         PROJ-1
+      #|Parent:      EPIC-1
     ),
   )
 }
@@ -263,9 +289,9 @@ test "format_usage: shows installed binary names" {
       #|  issue get        Get issue details
       #|                   issue get <key> [--fields <field,...>] [--format <table|tsv|json>]
       #|  issue create     Create a new issue
-      #|                   issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
+      #|                   issue create --project <key> --summary <text> [--type <type>] [--description <text>] [--parent <key|id>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
       #|  issue update     Update an existing issue
-      #|                   issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
+      #|                   issue update <key> [--summary <text>] [--description <text>] [--priority <name>] [--type <name>] [--labels <label1,label2>] [--parent <key|id>] [--assignee <email>] [--set <field=value>]... [--set-json <json-object>] [--dry-run] [--format <table|tsv|json>]
       #|  issue transition Transition issue status
       #|                   issue transition --key <key> --status <status>
       #|  issue comment    Add comment to issue
@@ -349,7 +375,7 @@ test "format_command_help: issue get includes output formats and notes" {
       #|  table, tsv, json (default: table)
       #|
       #|Notes:
-      #|  - Accepted fields: key,summary,status,assignee,type,priority,description,customfield_<id>
+      #|  - Accepted fields: key,summary,status,assignee,parent,type,priority,description,customfield_<id>
       #|  - Field aliases: type, issue_type, issuetype
       #|
       #|Examples:
@@ -368,6 +394,7 @@ test "format_issue_list_for_output: json wrapper is stable" {
         summary: "Fix bug",
         status: "Open",
         assignee: "Alice",
+        parent: "",
         issue_type: "Bug",
         priority: "High",
         description: "Line 1\nLine 2",
@@ -402,6 +429,7 @@ test "format_issue_detail_for_output: tsv is machine readable" {
     summary: "Fix bug",
     status: "Open",
     assignee: "Alice",
+    parent: "",
     issue_type: "Bug",
     priority: "High",
     description: "Line 1\nLine 2",

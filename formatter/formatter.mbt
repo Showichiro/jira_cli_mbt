@@ -114,6 +114,7 @@ fn issue_field_name(field : @types.IssueField) -> String {
     @types.Summary => "summary"
     @types.Status => "status"
     @types.Assignee => "assignee"
+    @types.Parent => "parent"
     @types.IssueType => "type"
     @types.Priority => "priority"
     @types.Description => "description"
