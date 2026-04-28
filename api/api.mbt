@@ -665,19 +665,34 @@ fn parse_sprint(s : @core.Any) -> @types.JiraSprint {
 ///|
 // List sprints on a board.
 // state: comma-separated list of "active", "future", "closed". Empty = all.
+//
+// The /rest/agile/1.0/board/{boardId}/sprint endpoint is paginated (default
+// maxResults = 50), so we follow `isLast` and `startAt` until exhausted to
+// surface every sprint regardless of board size.
 pub async fn list_board_sprints(
   config : @types.JiraConfig,
   board_id : String,
   state : String,
 ) -> Array[@types.JiraSprint] {
-  let path = if state.length() > 0 {
-    "/rest/agile/1.0/board/\{board_id}/sprint?state=\{state}"
-  } else {
-    "/rest/agile/1.0/board/\{board_id}/sprint"
+  let items : Array[@types.JiraSprint] = []
+  let mut start_at = 0
+  let mut is_last = false
+  while not(is_last) {
+    let state_param = if state.length() > 0 { "&state=\{state}" } else { "" }
+    let path =
+      "/rest/agile/1.0/board/\{board_id}/sprint?startAt=\{start_at}\{state_param}"
+    let data = api_request(config, "GET", path)
+    let values = @core.array_from(data._get("values"))
+    if values.is_empty() {
+      break
+    }
+    for v in values {
+      items.push(parse_sprint(v))
+    }
+    is_last = get_string(data, "isLast") == "true"
+    start_at = start_at + values.length()
   }
-  let data = api_request(config, "GET", path)
-  let values = @core.array_from(data._get("values"))
-  values.map(parse_sprint)
+  items
 }
 
 ///|

@@ -27,10 +27,21 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
     ["fields", field_id, .. rest] if not(field_id.has_prefix("--")) =>
       parse_get_field(field_id, rest)
     ["fields", .. rest] => parse_field_list(rest)
-    ["sprint", "list", .. rest] => parse_sprint_list(rest)
-    ["sprint", "add", .. rest] => parse_sprint_add(rest)
-    ["sprint", "remove", .. rest] => parse_sprint_remove(rest)
+    ["sprint", .. rest] => parse_sprint_group(rest)
     [cmd, ..] => Err("Unknown command: \{cmd}")
+  }
+}
+
+///|
+fn parse_sprint_group(
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match args {
+    [] => Ok(@types.Help(command_name="sprint"))
+    ["list", .. rest] => parse_sprint_list(rest)
+    ["add", .. rest] => parse_sprint_add(rest)
+    ["remove", .. rest] => parse_sprint_remove(rest)
+    [subcommand, ..] => Err("Unknown sprint subcommand: \{subcommand}")
   }
 }
 
@@ -786,9 +797,12 @@ fn parse_sprint_list(args : ArrayView[String]) -> Result[@types.Command, String]
     Ok(flags) =>
       match flags.get("board_id") {
         Some(board_id) => {
+          // Default = empty (all states). `--state all` is a no-op alias for
+          // explicit "give me everything". Any other value is forwarded
+          // verbatim to the JIRA Agile API.
           let state = match flags.get("state") {
-            Some(s) => s
-            None => "active"
+            Some(s) => if s == "all" { "" } else { s }
+            None => ""
           }
           Ok(@types.SprintList(board_id~, state~))
         }

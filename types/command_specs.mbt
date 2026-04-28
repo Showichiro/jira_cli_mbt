@@ -146,6 +146,125 @@ fn field_group_spec() -> CommandSpec {
 }
 
 ///|
+fn sprint_group_spec() -> CommandSpec {
+  {
+    name: "sprint",
+    summary: "Sprint operations (Jira Software / Agile API)",
+    usage: "sprint <subcommand> [options]",
+    aliases: [],
+    positionals: [
+      { name: "subcommand", description: "One of list, add, remove", required: true },
+    ],
+    flags: [],
+    output_formats: [],
+    notes: ["Canonical subcommands: list, add, remove"],
+    examples: [
+      "jira-cli sprint list --board-id 3 --state active",
+      "jira-cli sprint add --key APP-123 --sprint-id 42",
+      "jira-cli sprint remove --key APP-123",
+    ],
+  }
+}
+
+///|
+fn sprint_list_command_spec() -> CommandSpec {
+  {
+    name: "sprint list",
+    summary: "List sprints on a board (Agile API)",
+    usage: "sprint list --board-id <id> [--state <state>]",
+    aliases: [],
+    positionals: [],
+    flags: [
+      {
+        name: "--board-id",
+        value_name: "id",
+        description: "Board id whose sprints to list",
+        required: true,
+        repeatable: false,
+        default_value: None,
+        aliases: [],
+      },
+      {
+        name: "--state",
+        value_name: "state",
+        description: "active | future | closed (comma-separated). 'all' or omitted = every state",
+        required: false,
+        repeatable: false,
+        default_value: Some(""),
+        aliases: [],
+      },
+    ],
+    output_formats: global_output_formats(),
+    notes: [
+      "Paginates through every sprint on the board until isLast is true.",
+    ],
+    examples: [
+      "jira-cli sprint list --board-id 3 --state active",
+      "jira-cli sprint list --board-id 3 --format json",
+    ],
+  }
+}
+
+///|
+fn sprint_add_command_spec() -> CommandSpec {
+  {
+    name: "sprint add",
+    summary: "Move an issue into a sprint (Agile API)",
+    usage: "sprint add --key <key> --sprint-id <sprint id>",
+    aliases: [],
+    positionals: [],
+    flags: [
+      {
+        name: "--key",
+        value_name: "key",
+        description: "Issue key to move",
+        required: true,
+        repeatable: false,
+        default_value: None,
+        aliases: [],
+      },
+      {
+        name: "--sprint-id",
+        value_name: "sprint id",
+        description: "Target sprint id (numeric)",
+        required: true,
+        repeatable: false,
+        default_value: None,
+        aliases: [],
+      },
+    ],
+    output_formats: [],
+    notes: ["Use `sprint list` to discover the active sprint id for a board."],
+    examples: ["jira-cli sprint add --key APP-123 --sprint-id 42"],
+  }
+}
+
+///|
+fn sprint_remove_command_spec() -> CommandSpec {
+  {
+    name: "sprint remove",
+    summary: "Move an issue back to the backlog (Agile API)",
+    usage: "sprint remove --key <key>",
+    aliases: [],
+    positionals: [],
+    flags: [
+      {
+        name: "--key",
+        value_name: "key",
+        description: "Issue key to remove from its sprint",
+        required: true,
+        repeatable: false,
+        default_value: None,
+        aliases: [],
+      },
+    ],
+    output_formats: [],
+    notes: [],
+    examples: ["jira-cli sprint remove --key APP-123"],
+  }
+}
+
+///|
 fn config_command_spec() -> CommandSpec {
   {
     name: "config",
@@ -771,6 +890,10 @@ pub fn command_specs() -> Array[CommandSpec] {
     field_group_spec(),
     field_list_command_spec(),
     field_get_command_spec(),
+    sprint_group_spec(),
+    sprint_list_command_spec(),
+    sprint_add_command_spec(),
+    sprint_remove_command_spec(),
     help_command_spec(),
     describe_command_spec(),
   ]
