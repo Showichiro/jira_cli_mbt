@@ -654,6 +654,66 @@ pub async fn add_comment(
 }
 
 ///|
+fn parse_sprint(s : @core.Any) -> @types.JiraSprint {
+  {
+    id: get_string(s, "id"),
+    state: get_string(s, "state"),
+    name: get_string(s, "name"),
+  }
+}
+
+///|
+// List sprints on a board.
+// state: comma-separated list of "active", "future", "closed". Empty = all.
+pub async fn list_board_sprints(
+  config : @types.JiraConfig,
+  board_id : String,
+  state : String,
+) -> Array[@types.JiraSprint] {
+  let path = if state.length() > 0 {
+    "/rest/agile/1.0/board/\{board_id}/sprint?state=\{state}"
+  } else {
+    "/rest/agile/1.0/board/\{board_id}/sprint"
+  }
+  let data = api_request(config, "GET", path)
+  let values = @core.array_from(data._get("values"))
+  values.map(parse_sprint)
+}
+
+///|
+// Move an issue into the given sprint (by sprint id).
+pub async fn add_issue_to_sprint(
+  config : @types.JiraConfig,
+  key : String,
+  sprint_id : String,
+) -> Unit {
+  let issues : Array[@core.Any] = [@core.any(key)]
+  let body = @core.from_entries([("issues", @core.any(issues))])
+  let _ = api_request(
+    config,
+    "POST",
+    "/rest/agile/1.0/sprint/\{sprint_id}/issue",
+    body~,
+  )
+}
+
+///|
+// Move an issue back to the backlog (out of any sprint).
+pub async fn remove_issue_from_sprint(
+  config : @types.JiraConfig,
+  key : String,
+) -> Unit {
+  let issues : Array[@core.Any] = [@core.any(key)]
+  let body = @core.from_entries([("issues", @core.any(issues))])
+  let _ = api_request(
+    config,
+    "POST",
+    "/rest/agile/1.0/backlog/issue",
+    body~,
+  )
+}
+
+///|
 async fn search_users(config : @types.JiraConfig, email : String) -> @core.Any {
   let encoded = encode_uri_component(email)
   api_request(config, "GET", "/rest/api/3/user/search?query=\{encoded}")

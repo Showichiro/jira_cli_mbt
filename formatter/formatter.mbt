@@ -453,6 +453,57 @@ pub fn format_projects_for_output(
 }
 
 ///|
+pub fn format_sprints(sprints : Array[@types.JiraSprint]) -> String {
+  if sprints.is_empty() {
+    return "No sprints found."
+  }
+  let headers = ["ID", "STATE", "NAME"]
+  let widths = [12, 11, 30]
+  let rows = sprints.map(fn(s) { [s.id, s.state, truncate(s.name, 30)] })
+  format_table(headers, rows, widths)
+}
+
+///|
+fn format_sprints_tsv(sprints : Array[@types.JiraSprint]) -> String {
+  let rows = sprints.map(fn(s) { [s.id, s.state, s.name] })
+  [format_tsv_row(["id", "state", "name"]), ..rows.map(format_tsv_row)].join(
+    "\n",
+  )
+}
+
+///|
+fn format_sprints_json(sprints : Array[@types.JiraSprint]) -> String {
+  json_object([
+    ("schema_version", json_string("v1")),
+    ("kind", json_string("sprints")),
+    (
+      "items",
+      json_array(
+        sprints.map(fn(s) {
+          json_object([
+            ("id", json_string(s.id)),
+            ("state", json_string(s.state)),
+            ("name", json_string(s.name)),
+          ])
+        }),
+      ),
+    ),
+  ])
+}
+
+///|
+pub fn format_sprints_for_output(
+  sprints : Array[@types.JiraSprint],
+  output_format : @types.OutputFormat,
+) -> String {
+  match output_format {
+    @types.Table => format_sprints(sprints)
+    @types.Tsv => format_sprints_tsv(sprints)
+    @types.Json => format_sprints_json(sprints)
+  }
+}
+
+///|
 pub fn format_fields(fields : Array[@types.JiraField]) -> String {
   if fields.is_empty() {
     return "No custom fields found."

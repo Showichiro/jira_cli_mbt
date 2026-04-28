@@ -185,6 +185,13 @@ pub(all) struct JiraProject {
 } derive(Show)
 
 ///|
+pub(all) struct JiraSprint {
+  id : String
+  state : String
+  name : String
+} derive(Show)
+
+///|
 pub(all) struct JiraIssuePage {
   items : Array[JiraIssue]
   page : PageInfo
@@ -246,6 +253,13 @@ pub(all) enum Command {
   ListProjects(page_request~ : PageRequest)
   ListFields(page_request~ : PageRequest)
   GetField(field_id~ : String, project~ : String, issue_type~ : String)
+  // Sprint operations on the JIRA Agile API.
+  // SprintList lists sprints on a board (default state=active).
+  // SprintAdd moves an issue into the given sprint by id.
+  // SprintRemove moves an issue back to the backlog (out of any sprint).
+  SprintList(board_id~ : String, state~ : String)
+  SprintAdd(key~ : String, sprint_id~ : String)
+  SprintRemove(key~ : String)
   Help(command_name~ : String)
   Describe(command_name~ : String)
 } derive(Show)
