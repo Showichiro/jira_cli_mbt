@@ -27,7 +27,21 @@ pub fn parse_args(args : ArrayView[String]) -> Result[@types.Command, String] {
     ["fields", field_id, .. rest] if not(field_id.has_prefix("--")) =>
       parse_get_field(field_id, rest)
     ["fields", .. rest] => parse_field_list(rest)
+    ["sprint", .. rest] => parse_sprint_group(rest)
     [cmd, ..] => Err("Unknown command: \{cmd}")
+  }
+}
+
+///|
+fn parse_sprint_group(
+  args : ArrayView[String],
+) -> Result[@types.Command, String] {
+  match args {
+    [] => Ok(@types.Help(command_name="sprint"))
+    ["list", .. rest] => parse_sprint_list(rest)
+    ["add", .. rest] => parse_sprint_add(rest)
+    ["remove", .. rest] => parse_sprint_remove(rest)
+    [subcommand, ..] => Err("Unknown sprint subcommand: \{subcommand}")
   }
 }
 
@@ -757,6 +771,66 @@ fn parse_assign(args : ArrayView[String]) -> Result[@types.Command, String] {
       match (flags.get("key"), flags.get("email")) {
         (Some(key), Some(email)) => Ok(@types.Assign(key~, email~))
         _ => Err("Usage: assign --key <key> --email <email>")
+      }
+    Err(message) => Err(message)
+  }
+}
+
+///|
+let sprint_list_flags : Map[String, String] = {
+  "--board-id": "board_id",
+  "--state": "state",
+}
+
+///|
+let sprint_add_flags : Map[String, String] = {
+  "--key": "key",
+  "--sprint-id": "sprint_id",
+}
+
+///|
+let sprint_remove_flags : Map[String, String] = { "--key": "key" }
+
+///|
+fn parse_sprint_list(args : ArrayView[String]) -> Result[@types.Command, String] {
+  match parse_flags(args, sprint_list_flags, {}) {
+    Ok(flags) =>
+      match flags.get("board_id") {
+        Some(board_id) => {
+          // Default = empty (all states). `--state all` is a no-op alias for
+          // explicit "give me everything". Any other value is forwarded
+          // verbatim to the JIRA Agile API.
+          let state = match flags.get("state") {
+            Some(s) => if s == "all" { "" } else { s }
+            None => ""
+          }
+          Ok(@types.SprintList(board_id~, state~))
+        }
+        None => Err("Usage: sprint list --board-id <id> [--state <state>]")
+      }
+    Err(message) => Err(message)
+  }
+}
+
+///|
+fn parse_sprint_add(args : ArrayView[String]) -> Result[@types.Command, String] {
+  match parse_flags(args, sprint_add_flags, {}) {
+    Ok(flags) =>
+      match (flags.get("key"), flags.get("sprint_id")) {
+        (Some(key), Some(sprint_id)) => Ok(@types.SprintAdd(key~, sprint_id~))
+        _ => Err("Usage: sprint add --key <key> --sprint-id <sprint id>")
+      }
+    Err(message) => Err(message)
+  }
+}
+
+///|
+fn parse_sprint_remove(args : ArrayView[String]) -> Result[@types.Command, String] {
+  match parse_flags(args, sprint_remove_flags, {}) {
+    Ok(flags) =>
+      match flags.get("key") {
+        Some(key) => Ok(@types.SprintRemove(key~))
+        None => Err("Usage: sprint remove --key <key>")
       }
     Err(message) => Err(message)
   }

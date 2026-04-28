@@ -167,6 +167,23 @@ async fn execute_command(
         )
       }
     }
+    @types.SprintList(board_id~, state~) => {
+      let config = @config.load_config()
+      @formatter.format_sprints_for_output(
+        @api.list_board_sprints(config, board_id, state),
+        output_format,
+      )
+    }
+    @types.SprintAdd(key~, sprint_id~) => {
+      let config = @config.load_config()
+      @api.add_issue_to_sprint(config, key, sprint_id)
+      "Issue \{key} moved into sprint \{sprint_id}"
+    }
+    @types.SprintRemove(key~) => {
+      let config = @config.load_config()
+      @api.remove_issue_from_sprint(config, key)
+      "Issue \{key} removed from sprint (returned to backlog)"
+    }
   }
 }
 
